@@ -50,7 +50,8 @@ Inkplate display(INKPLATE_1BIT);
 
 // All our network functions are in this object, see Network.h
 Network network;
-
+// Human readable city name
+char city[128];
 // Contants used for drawing icons
 char abbrs[32][16] = {"sn", "sl", "h", "t", "hr", "lr", "s", "hc", "lc", "c"};
 const uint8_t *logos[16] = {icon_sn, icon_sl, icon_h, icon_t, icon_hr, icon_lr, icon_s, icon_hc, icon_lc, icon_c};
@@ -136,7 +137,7 @@ void weatherPage()
         network.getTime(currentTime);
         network.getTime(currentTime);
         network.getDays(days[0], days[1], days[2], days[3]);
-        network.getData(SECRET_CITY, temps[0], temps[1], temps[2], temps[3], currentTemp, currentWind, currentTime,
+        network.getData(city, temps[0], temps[1], temps[2], temps[3], currentTemp, currentWind, currentTime,
                         currentWeather, currentWeatherAbbr, abbr1, abbr2, abbr3, abbr4);
 
         // Draw data, see functions below for info
@@ -165,7 +166,7 @@ void weatherPage()
     ++refreshes;
 
     // Go to sleep
-    esp_sleep_enable_timer_wakeup(WEATHER_DELAY_US);
+    esp_sleep_enable_timer_wakeup(PHOTO_DELAY_US);
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_34, 1);
     (void)esp_deep_sleep_start();
 }
@@ -303,8 +304,8 @@ void drawCity()
     display.setFont(&Roboto_Light_36);
     display.setTextSize(1);
 
-    display.setCursor(600 - 9 * strlen(SECRET_CITY), 790);
-    display.println(SECRET_CITY);
+    display.setCursor(600 - 9 * strlen(city), 790);
+    display.println(city);
 }
 
 // Function for drawing temperatures

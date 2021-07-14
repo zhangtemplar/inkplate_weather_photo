@@ -171,15 +171,15 @@ void Network::getData(char *city, char *temp1, char *temp2, char *temp3, char *t
                 strcpy(currentWeather, doc["consolidated_weather"][0]["weather_state_name"].as<char *>());
                 strcpy(currentWeatherAbbr, doc["consolidated_weather"][0]["weather_state_abbr"].as<char *>());
 
-                strcpy(abbr1, doc["consolidated_weather"][0]["weather_state_abbr"].as<char *>());
-                strcpy(abbr2, doc["consolidated_weather"][1]["weather_state_abbr"].as<char *>());
-                strcpy(abbr3, doc["consolidated_weather"][2]["weather_state_abbr"].as<char *>());
-                strcpy(abbr4, doc["consolidated_weather"][3]["weather_state_abbr"].as<char *>());
+                strcpy(abbr1, doc["consolidated_weather"][1]["weather_state_abbr"].as<char *>());
+                strcpy(abbr2, doc["consolidated_weather"][2]["weather_state_abbr"].as<char *>());
+                strcpy(abbr3, doc["consolidated_weather"][3]["weather_state_abbr"].as<char *>());
+                strcpy(abbr4, doc["consolidated_weather"][4]["weather_state_abbr"].as<char *>());
 
-                formatTemp(temp1, doc["consolidated_weather"][0][F("the_temp")].as<float>());
-                formatTemp(temp2, doc["consolidated_weather"][1][F("the_temp")].as<float>());
-                formatTemp(temp3, doc["consolidated_weather"][2][F("the_temp")].as<float>());
-                formatTemp(temp4, doc["consolidated_weather"][3][F("the_temp")].as<float>());
+                formatTemp(temp1, doc["consolidated_weather"][1][F("the_temp")].as<float>());
+                formatTemp(temp2, doc["consolidated_weather"][2][F("the_temp")].as<float>());
+                formatTemp(temp3, doc["consolidated_weather"][3][F("the_temp")].as<float>());
+                formatTemp(temp4, doc["consolidated_weather"][4][F("the_temp")].as<float>());
             }
         }
     }
@@ -231,10 +231,10 @@ void Network::getDays(char *day, char *day1, char *day2, char *day3)
     int dayWeek = ((long)((nowSecs + 3600L * SECRET_TIMEZONE) / 86400L) + 3) % 7;
 
     // Copy day data to globals in main file
-    strncpy(day, weekDays[dayWeek], 3);
-    strncpy(day1, weekDays[(dayWeek + 1) % 7], 3);
-    strncpy(day2, weekDays[(dayWeek + 2) % 7], 3);
-    strncpy(day3, weekDays[(dayWeek + 3) % 7], 3);
+    strncpy(day, weekDays[(dayWeek + 1) % 7], 3);
+    strncpy(day1, weekDays[(dayWeek + 2) % 7], 3);
+    strncpy(day2, weekDays[(dayWeek + 3) % 7], 3);
+    strncpy(day3, weekDays[(dayWeek + 4) % 7], 3);
 }
 
 void Network::findCity(char *city)
