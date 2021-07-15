@@ -1,5 +1,5 @@
 /*
-Network.h
+WeatherNetwork.h
 Inkplate 6 Arduino library
 David Zovko, Borna Biro, Denis Vajak, Zvonimir Haramustek @ e-radionica.com
 September 24, 2020
@@ -27,12 +27,12 @@ extern int SECRET_TIMEZONE;
 extern char *SECRET_SSID;
 extern char *SECRET_PASS;
 
-#ifndef NETWORK_H
-#define NETWORK_H
+#ifndef WEATHER_NETWORK_H
+#define WEATHER_NETWORK_H
 
-// All functions defined in Network.cpp
+// All functions defined in WeatherNetwork.cpp
 
-class Network
+class WeatherNetwork
 {
   public:
     // Functions we can access in main file

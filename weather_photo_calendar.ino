@@ -28,8 +28,8 @@
 // Include Inkplate library to the sketch
 #include "Inkplate.h"
 
-// Header file for easier code readability
-#include "Network.h"
+// For Weather
+#include "WeatherNetwork.h"
 
 // Including fonts used
 #include "Fonts/Roboto_Light_120.h"
@@ -44,12 +44,28 @@
 #define WEATHER_DELAY_US 60 * 1000 * 1000
 // wait for 4 hours before next photo update
 #define PHOTO_DELAY_US 4 * 60 * 60 * 1000 * 1000
+// wait for 1 hour before next photo update
+#define CALENDAR_DELAY_US 60 * 60 * 1000 * 1000
 
 // Inkplate object
-Inkplate display(INKPLATE_1BIT);
+Inkplate display(INKPLATE_3BIT);
 
-// All our network functions are in this object, see Network.h
-Network network;
+/*
+ * which page to show
+ * 0: weather
+ * 1: photo
+ * 2: calendar
+ * others are not supported
+ */
+#define PAGE_WEATHER 0
+#define PAGE_PHOTO 1
+#define PAGE_CALENDAR 2
+RTC_DATA_ATTR char page = PAGE_WEATHER;
+RTC_DATA_ATTR char previousPage = -1;
+
+/* Weather Start  ======================================== */
+// All our weatherNetwork functions are in this object, see WeatherNetwork.h
+WeatherNetwork weatherNetwork;
 // Human readable city name
 char city[128];
 // Contants used for drawing icons
@@ -94,36 +110,24 @@ RTC_DATA_ATTR char currentTime[16] = "9:41";
 RTC_DATA_ATTR char currentWeather[32] = "-";
 RTC_DATA_ATTR char currentWeatherAbbr[8] = "th";
 
-/*
- * which page to show
- * 0: weather
- * 1: photo
- * 2: calendar
- * others are not supported
- */
-#define PAGE_WEATHER 0
-#define PAGE_PHOTO 1
-#define PAGE_CALENDAR 2
-RTC_DATA_ATTR char page = PAGE_WEATHER;
-RTC_DATA_ATTR char previousPage = -1;
-
 // functions defined below
 void drawWeather();
 void drawCurrent();
 void drawTemps();
 void drawCity();
 void drawTime();
+
 void refreshDisplay(bool forceClear);
 
 void weatherPage()
 {
     if (refreshes % fullRefresh == 0)
     {
-        // Calling our begin from network.h file
-        network.begin(SECRET_CITY);
+        // Calling our begin from weatherNetwork.h file
+        weatherNetwork.begin(SECRET_CITY);
 
         // If city not found, do nothing
-        if (network.location == -1)
+        if (weatherNetwork.location == -1)
         {
             display.setCursor(50, 290);
             display.setTextSize(3);
@@ -133,11 +137,11 @@ void weatherPage()
                 ;
         }
 
-        // Get all relevant data, see Network.cpp for info
-        network.getTime(currentTime);
-        network.getTime(currentTime);
-        network.getDays(days[0], days[1], days[2], days[3]);
-        network.getData(city, temps[0], temps[1], temps[2], temps[3], currentTemp, currentWind, currentTime,
+        // Get all relevant data, see WeatherNetwork.cpp for info
+        weatherNetwork.getTime(currentTime);
+        weatherNetwork.getTime(currentTime);
+        weatherNetwork.getDays(days[0], days[1], days[2], days[3]);
+        weatherNetwork.getData(city, temps[0], temps[1], temps[2], temps[3], currentTemp, currentWind, currentTime,
                         currentWeather, currentWeatherAbbr, abbr1, abbr2, abbr3, abbr4);
 
         // Draw data, see functions below for info
@@ -152,7 +156,7 @@ void weatherPage()
     else
     {
         // Refresh only the clock
-        network.getTime(currentTime);
+        weatherNetwork.getTime(currentTime);
 
         drawTime();
         drawWeather();
@@ -170,6 +174,7 @@ void weatherPage()
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_34, 1);
     (void)esp_deep_sleep_start();
 }
+/* Weather End ======================================== */
 
 void photoPage() {
 
@@ -236,6 +241,7 @@ void setup()
         break;
       default:
         Serial.println("unsupported page");
+        weatherPage();
     }
     // TODO: handle key press
 }

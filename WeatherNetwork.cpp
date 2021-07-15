@@ -1,5 +1,5 @@
 /*
-Network.cpp
+WeatherNetwork.cpp
 Inkplate 6 Arduino library
 David Zovko, Borna Biro, Denis Vajak, Zvonimir Haramustek @ e-radionica.com
 September 24, 2020
@@ -14,9 +14,9 @@ If you have any questions about licensing, please contact techsupport@e-radionic
 Distributed as-is; no warranty is given.
 */
 
-// Network.cpp contains various functions and classes that enable Weather station
+// WeatherNetwork.cpp contains various functions and classes that enable Weather station
 // They have been declared in seperate file to increase readability
-#include "Network.h"
+#include "WeatherNetwork.h"
 
 #include <HTTPClient.h>
 #include <WiFi.h>
@@ -31,7 +31,7 @@ char weekDays[8][8] = {
     "Mon", "Tue", "Wed", "Thr", "Fri", "Sat", "Sun",
 };
 
-void Network::begin(char *city)
+void WeatherNetwork::begin(char *city)
 {
     // Initiating wifi, like in BasicHttpClient example
     WiFi.mode(WIFI_STA);
@@ -62,7 +62,7 @@ void Network::begin(char *city)
 }
 
 // Gets time from ntp server
-void Network::getTime(char *timeStr)
+void WeatherNetwork::getTime(char *timeStr)
 {
     // Get seconds since 1.1.1970.
     time_t nowSecs = time(nullptr);
@@ -97,7 +97,7 @@ void formatWind(char *str, float wind)
     dtostrf(wind, 2, 0, str);
 }
 
-void Network::getData(char *city, char *temp1, char *temp2, char *temp3, char *temp4, char *currentTemp,
+void WeatherNetwork::getData(char *city, char *temp1, char *temp2, char *temp3, char *temp4, char *currentTemp,
                       char *currentWind, char *currentTime, char *currentWeather, char *currentWeatherAbbr, char *abbr1,
                       char *abbr2, char *abbr3, char *abbr4)
 {
@@ -192,7 +192,7 @@ void Network::getData(char *city, char *temp1, char *temp2, char *temp3, char *t
     WiFi.setSleep(sleep);
 }
 
-void Network::setTime()
+void WeatherNetwork::setTime()
 {
     // Used for setting correct time
     configTime(0, 0, "pool.ntp.org", "time.nist.gov");
@@ -218,7 +218,7 @@ void Network::setTime()
     Serial.print(asctime(&timeinfo));
 }
 
-void Network::getDays(char *day, char *day1, char *day2, char *day3)
+void WeatherNetwork::getDays(char *day, char *day1, char *day2, char *day3)
 {
     // Seconds since 1.1.1970.
     time_t nowSecs = time(nullptr);
@@ -237,7 +237,7 @@ void Network::getDays(char *day, char *day1, char *day2, char *day3)
     strncpy(day3, weekDays[(dayWeek + 4) % 7], 3);
 }
 
-void Network::findCity(char *city)
+void WeatherNetwork::findCity(char *city)
 {
     // If not connected to wifi reconnect wifi
     if (WiFi.status() != WL_CONNECTED)
