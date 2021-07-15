@@ -123,6 +123,7 @@ void weatherPage()
 {
     if (refreshes % fullRefresh == 0)
     {
+        Serial.println("weather full refresh");
         // Calling our begin from weatherNetwork.h file
         weatherNetwork.begin(SECRET_CITY);
 
@@ -155,6 +156,7 @@ void weatherPage()
     }
     else
     {
+        Serial.println("weather partial refresh");
         // Refresh only the clock
         weatherNetwork.getTime(currentTime);
 
@@ -164,7 +166,7 @@ void weatherPage()
         drawTemps();
         drawCity();
 
-        display.partialUpdate();
+        display.display();
     }
 
     ++refreshes;
@@ -293,6 +295,7 @@ void drawWeather()
 // Function for drawing current time
 void drawTime()
 {
+    Serial.println("weather drawTime");
     // Drawing current time
     display.setTextColor(BLACK, WHITE);
     display.setFont(&Roboto_Light_36);
