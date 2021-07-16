@@ -47,7 +47,7 @@ void WeatherNetwork::begin(char *city)
 
         if (cnt == 20)
         {
-            Serial.println("Can't connect to WIFI, restarting");
+            Serial.println(F("Can't connect to WIFI, restarting"));
             delay(100);
             ESP.restart();
         }
@@ -119,7 +119,7 @@ void WeatherNetwork::getData(char *city, char *temp1, char *temp2, char *temp3, 
 
             if (cnt == 7)
             {
-                Serial.println("Can't connect to WIFI, restart initiated.");
+                Serial.println(F("Can't connect to WIFI, restart initiated."));
                 delay(100);
                 ESP.restart();
             }
@@ -257,7 +257,7 @@ void WeatherNetwork::findCity(char *city)
 
             if (cnt == 7)
             {
-                Serial.println("Can't connect to WIFI, restart initiated.");
+                Serial.println(F("Can't connect to WIFI, restart initiated."));
                 delay(100);
                 ESP.restart();
             }

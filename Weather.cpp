@@ -40,8 +40,15 @@ RTC_DATA_ATTR char currentWeather[32] = "-";
 RTC_DATA_ATTR char currentWeatherAbbr[8] = "th";
 /* RTC Data End ======================================== */
 
+// Human readable city name
+char city[128];
+// Contants used for drawing icons
+char abbrs[32][16] = {"sn", "sl", "h", "t", "hr", "lr", "s", "hc", "lc", "c"};
+const uint8_t *logos[16] = {icon_sn, icon_sl, icon_h, icon_t, icon_hr, icon_lr, icon_s, icon_hc, icon_lc, icon_c};
+const uint8_t *s_logos[16] = {icon_s_sn, icon_s_sl, icon_s_h,  icon_s_t,  icon_s_hr,
+                            icon_s_lr, icon_s_s,  icon_s_hc, icon_s_lc, icon_s_c};
 // Function for drawing weather info
-void Weather::drawWeather(Inkplate display)
+void Weather::drawWeather()
 {
     // Searching for weather state abbreviation
     for (int i = 0; i < 10; ++i)
@@ -60,9 +67,9 @@ void Weather::drawWeather(Inkplate display)
 }
 
 // Function for drawing current time
-void Weather::drawTime(Inkplate display)
+void Weather::drawTime()
 {
-    Serial.println("weather drawTime");
+    Serial.println(F("weather drawTime"));
     // Drawing current time
     display.setTextColor(BLACK, WHITE);
     display.setFont(&Roboto_Light_36);
@@ -73,7 +80,7 @@ void Weather::drawTime(Inkplate display)
 }
 
 // Function for drawing city name
-void Weather::drawCity(Inkplate display)
+void Weather::drawCity()
 {
     // Drawing city name
     display.setTextColor(BLACK, WHITE);
@@ -85,7 +92,7 @@ void Weather::drawCity(Inkplate display)
 }
 
 // Function for drawing temperatures
-void Weather::drawTemps(Inkplate display)
+void Weather::drawTemps()
 {
     // Drawing 4 black rectangles in which temperatures will be written
     int rectWidth = 150;
@@ -169,7 +176,7 @@ void Weather::drawTemps(Inkplate display)
 }
 
 // Current weather drawing function
-void Weather::drawCurrent(Inkplate display)
+void Weather::drawCurrent()
 {
     // Drawing current information
 
@@ -218,11 +225,11 @@ void Weather::drawCurrent(Inkplate display)
     display.println(F("WIND SPEED"));
 }
 
-void Weather::draw(Inkplate display)
+void Weather::draw()
 {
     if (refreshes % fullRefresh == 0)
     {
-        Serial.println("weather full refresh");
+        Serial.println(F("weather full refresh"));
         // Calling our begin from weatherNetwork.h file
         weatherNetwork.begin(SECRET_CITY);
 
@@ -245,27 +252,27 @@ void Weather::draw(Inkplate display)
                         currentWeather, currentWeatherAbbr, abbr1, abbr2, abbr3, abbr4);
 
         // Draw data, see functions below for info
-        drawTime(display);
-        drawWeather(display);
-        drawCurrent(display);
-        drawTemps(display);
-        drawCity(display);
+        drawTime();
+        drawWeather();
+        drawCurrent();
+        drawTemps();
+        drawCity();
 
         display.display();
     }
     else
     {
-        Serial.println("weather partial refresh");
+        Serial.println(F("weather partial refresh"));
         // Refresh only the clock
         weatherNetwork.getTime(currentTime);
 
-        drawTime(display);
-        drawWeather(display);
-        drawCurrent(display);
-        drawTemps(display);
-        drawCity(display);
+        drawTime();
+        drawWeather();
+        drawCurrent();
+        drawTemps();
+        drawCity();
 
-        display.display();
+        display.partialUpdate();
     }
 
     ++refreshes;

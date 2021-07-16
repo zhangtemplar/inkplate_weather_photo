@@ -89,19 +89,19 @@ void readTouchPad() {
     if (key & (1 << 10))
     { // Check if first pad has been touched. If it is, decrement the number and refresh the screen.
         page = PAGE_WEATHER;
-        Serial.println("key pressed for weather");
+        Serial.println(F("key pressed for weather"));
     }
 
     if (key & (1 << 11))
     { // If you touched second touchpad, set number to zero and refresh screen by calling our displayNumber() function
         page = PAGE_PHOTO;
-        Serial.println("key pressed for photo");
+        Serial.println(F("key pressed for photo"));
     }
 
     if (key & (1 << 12))
     { // If you touched third touchpad, incerement the number and refresh the screen.
         page = PAGE_CALENDAR;
-        Serial.println("key pressed for calendar");
+        Serial.println(F("key pressed for calendar"));
     }
 }
 
@@ -138,20 +138,20 @@ void setup()
     uint64_t sleepUs = PHOTO_DELAY_US;
     switch (page) {
       case PAGE_WEATHER:
-        weather.draw(display);
-        sleepUs = CALENDAR_DELAY_US;
+        weather.draw();
+        sleepUs = WEATHER_DELAY_US;
         break;
       case PAGE_PHOTO:
         photoPage();
         sleepUs = PHOTO_DELAY_US;
         break;
       default:
-        Serial.println("unsupported page");
-        weather.draw(display);
+        Serial.println(F("unsupported page"));
+        photoPage();
     }
 
     // Go to sleep
-    Serial.println("Going to sleep");
+    Serial.println(F("Going to sleep"));
     esp_sleep_enable_timer_wakeup(sleepUs);
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_34, 1);
     (void)esp_deep_sleep_start();
@@ -160,5 +160,3 @@ void setup()
 void loop()
 {
 }
-
-

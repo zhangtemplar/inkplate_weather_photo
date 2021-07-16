@@ -7,6 +7,7 @@
 
 // Include Inkplate library to the sketch
 #include "Inkplate.h"
+
 // For Weather
 #include "WeatherNetwork.h"
 
@@ -15,32 +16,28 @@
 
 // from settings.h
 extern char SECRET_CITY[128];
+// for the device. This could not be a class variable or function argument
+// otherwise it will cause stack overflow
+extern Inkplate display;
 
 class Weather {
 private:
     WeatherNetwork weatherNetwork;
-    // Human readable city name
-    char city[128];
-    // Contants used for drawing icons
-    char abbrs[32][16] = {"sn", "sl", "h", "t", "hr", "lr", "s", "hc", "lc", "c"};
-    const uint8_t *logos[16] = {icon_sn, icon_sl, icon_h, icon_t, icon_hr, icon_lr, icon_s, icon_hc, icon_lc, icon_c};
-    const uint8_t *s_logos[16] = {icon_s_sn, icon_s_sl, icon_s_h,  icon_s_t,  icon_s_hr,
-                                icon_s_lr, icon_s_s,  icon_s_hc, icon_s_lc, icon_s_c};
     // Constant to determine when to full update
     const int fullRefresh = 60;
 
     // Draw future weather
-    void drawWeather(Inkplate display);
+    void drawWeather();
     // Draw current weather
-    void drawCurrent(Inkplate display);
+    void drawCurrent();
     // Draw temperature (C) for all days
-    void drawTemps(Inkplate display);
+    void drawTemps();
     // Draw city on bottom
-    void drawCity(Inkplate display);
+    void drawCity();
     // Draw the time hh:mm on top right
-    void drawTime(Inkplate display);
+    void drawTime();
 public:
     // The main draw function
-    void draw(Inkplate display);
+    void draw();
 };
 #endif
