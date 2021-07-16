@@ -30,6 +30,7 @@
 
 // For Weather
 #include "Weather.h"
+#include "Calendar.h"
 
 // Delay between API calls
 // wait for 4 hours before next photo update
@@ -59,6 +60,7 @@ RTC_DATA_ATTR char page = PAGE_PHOTO;
 RTC_DATA_ATTR char previousPage = -1;
 
 Weather weather;
+Calendar calendar;
 
 /*
  * Refresh display when needed.
@@ -135,24 +137,25 @@ void setup()
     readTouchPad();
 
     refreshDisplay(false);
-    uint64_t sleepUs = PHOTO_DELAY_US;
+    uint64_t sleepUs = CALENDAR_DELAY_US;
     switch (page) {
       case PAGE_WEATHER:
         weather.draw();
-        sleepUs = WEATHER_DELAY_US;
+        // sleepUs = WEATHER_DELAY_US;
         break;
       case PAGE_PHOTO:
         photoPage();
-        sleepUs = PHOTO_DELAY_US;
+        // sleepUs = PHOTO_DELAY_US;
         break;
+      case PAGE_CALENDAR:
       default:
-        Serial.println(F("unsupported page"));
-        photoPage();
+        calendar.draw();
+        // sleepUs = CALENDAR_DELAY_US;
     }
 
     // Go to sleep
     Serial.println(F("Going to sleep"));
-    esp_sleep_enable_timer_wakeup(sleepUs);
+    esp_sleep_enable_timer_wakeup(CALENDAR_DELAY_US);
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_34, 1);
     (void)esp_deep_sleep_start();
 }
