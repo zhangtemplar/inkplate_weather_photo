@@ -30,7 +30,9 @@
 
 // For Weather
 #include "Weather.h"
+Weather weather;
 #include "Calendar.h"
+Calendar calendar;
 
 // Delay between API calls
 // wait for 4 hours before next photo update
@@ -56,11 +58,9 @@ Inkplate display(INKPLATE_1BIT);
 #define PAGE_WEATHER 0
 #define PAGE_PHOTO 1
 #define PAGE_CALENDAR 2
-RTC_DATA_ATTR char page = PAGE_PHOTO;
+RTC_DATA_ATTR char page = PAGE_WEATHER;
 RTC_DATA_ATTR char previousPage = -1;
 
-Weather weather;
-Calendar calendar;
 
 /*
  * Refresh display when needed.

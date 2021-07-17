@@ -26,15 +26,6 @@ class Calendar {
 private:
     // Our networking functions, see Network.cpp for info
     CalendarNetwork network;
-    const int refreshesToGet = 10;
-
-    // Variables for time and raw event info
-    char calendarDate[64];
-    char *calendarData;
-
-    // Here we store calendar calendarEntries
-    int entriesNum = 0;
-    entry calendarEntries[128];
 
     // draw title
     void drawInfo();

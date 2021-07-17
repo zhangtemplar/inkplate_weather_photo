@@ -41,16 +41,19 @@
 #define WIDTH 1200
 #define HEIGHT 825
 
-// All our functions declared below setup and loop
+const int refreshesToGet = 10;
+
+// Variables for time and raw event info
+char calendarDate[64];
+char *calendarData;
+
+// Here we store calendar calendarEntries
+int entriesNum = 0;
+entry calendarEntries[128];
 
 void Calendar::draw()
 {
     calendarData = (char *)ps_malloc(2000000LL);
-
-    // Initial display settings
-    display.begin();
-
-    display.setRotation(0);
     display.setTextWrap(false);
     display.setTextColor(0, 7);
 
@@ -64,9 +67,6 @@ void Calendar::draw()
         delay(1000);
     }
 
-    // Initial screen clearing
-    display.clearDisplay();
-
     // Drawing all calendarData, functions for that are above
     drawInfo();
     drawGrid();
@@ -75,7 +75,7 @@ void Calendar::draw()
 
     // Can't do partial due to deepsleep
     display.display();
-    free(calendarData);
+    // free(calendarData);
 }
 
 // Function for drawing calendar info
