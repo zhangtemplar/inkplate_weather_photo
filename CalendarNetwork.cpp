@@ -39,7 +39,7 @@ void CalendarNetwork::begin()
 
         if (cnt == 10)
         {
-            Serial.println("Can't connect to WIFI, restarting");
+            Serial.println(F("Can't connect to WIFI, restarting"));
             delay(100);
             ESP.restart();
         }
@@ -91,7 +91,7 @@ bool CalendarNetwork::getData(char *data)
 
             if (cnt == 10)
             {
-                Serial.println("Can't connect to WIFI, restart initiated.");
+                Serial.println(F("Can't connect to WIFI, restart initiated."));
                 delay(100);
                 ESP.restart();
             }

@@ -7,11 +7,12 @@
 #include "CalendarNetwork.h"
 
 // Struct for storing calender event info
+#define MAX_STRING_LENGTH 128
 struct entry
 {
-    char name[128];
-    char time[128];
-    char location[128];
+    char name[MAX_STRING_LENGTH];
+    char time[MAX_STRING_LENGTH];
+    char location[MAX_STRING_LENGTH];
     int day = -1;
     int timeStamp;
 };

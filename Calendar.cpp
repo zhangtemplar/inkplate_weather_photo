@@ -45,11 +45,14 @@ const int refreshesToGet = 10;
 
 // Variables for time and raw event info
 char calendarDate[64];
-char *calendarData;
+char* calendarData;
 
 // Here we store calendar calendarEntries
 int entriesNum = 0;
-entry calendarEntries[128];
+#define MAX_NUMBER_ENTRIES 128
+entry calendarEntries[MAX_NUMBER_ENTRIES];
+// number of events which is out of date before we stop searching
+#define NUMBER_EVENT_BEFORE_STOP 10
 
 void Calendar::draw()
 {
@@ -63,7 +66,7 @@ void Calendar::draw()
     // Keep trying to get calendarData if it fails the first time
     while (!network.getData(calendarData))
     {
-        Serial.println("Failed getting calendarData, retrying");
+        Serial.println(F("Failed getting calendarData, retrying"));
         delay(1000);
     }
 
@@ -75,7 +78,7 @@ void Calendar::draw()
 
     // Can't do partial due to deepsleep
     display.display();
-    // free(calendarData);
+    free(calendarData);
 }
 
 // Function for drawing calendar info
@@ -221,7 +224,7 @@ void Calendar::getToFrom(char *dst, char *from, char *to, int *day, int *timeSta
     network.getTime(temp);
     for (size_t i = 0; i < NUMBER_COLUMNS; i++) {
         network.getTime(dayName, i * 24 * 3600);
-        Serial.println(dayName);
+        // Serial.println(dayName);
         if (strncmp(dayName, dayEvent, 10) == 0) {
             *day = i;
             break;
@@ -337,7 +340,7 @@ bool Calendar::drawEvent(entry *event, int day, int beginY, int maxHeigth, int *
 
     // Set how high is the event
     *heigthNeeded = display.getCursorY() + 12 - y1;
-    Serial.print("print event ");
+    Serial.print(F("print event "));
     Serial.println(event -> name);
     Serial.println(x1);
     Serial.println(y1);
@@ -363,6 +366,7 @@ void Calendar::drawData()
 
     // reset count
     entriesNum = 0;
+    int numberOldEvent = 0;
 
     // Search raw calendarData for events
     while (i < n)
@@ -382,28 +386,50 @@ void Calendar::drawData()
 
         if (summary && summary < end)
         {
-            strncpy(calendarEntries[entriesNum].name, summary, strchr(summary, '\n') - summary);
-            calendarEntries[entriesNum].name[strchr(summary, '\n') - summary] = 0;
-        }
-        if (location && location < end)
-        {
-            strncpy(calendarEntries[entriesNum].location, location, strchr(location, '\n') - location);
-            calendarEntries[entriesNum].location[strchr(location, '\n') - location] = 0;
+            // cut too long name
+            int nameLength = min(MAX_STRING_LENGTH, strchr(summary, '\n') - summary);
+            strncpy(calendarEntries[entriesNum].name, summary, nameLength);
+            calendarEntries[entriesNum].name[nameLength] = 0;
+            Serial.print(F("found event "));
+            Serial.println(entriesNum);
+            Serial.println(calendarEntries[entriesNum].name);
+        } else {
+            continue;
         }
         if (timeStart && timeStart < end && timeEnd < end)
         {
             getToFrom(calendarEntries[entriesNum].time, timeStart, timeEnd, &calendarEntries[entriesNum].day,
                       &calendarEntries[entriesNum].timeStamp);
+            Serial.println(calendarEntries[entriesNum].time);
+            if (calendarEntries[entriesNum].day == -1) {
+                // no day is matched, either there is no date or it is beyond current week
+                Serial.println(F("day out of range of 7 days"));
+                numberOldEvent += 1;
+                if (numberOldEvent >= NUMBER_EVENT_BEFORE_STOP) {
+                    // Too many old events are found, stop searching for efficiency
+                    Serial.println(F("stop searching for now"));
+                    break;
+                } else {
+                    continue;
+                }
+            }
+        } else {
+            Serial.println(F("no late is availale"));
+            continue;
         }
-        Serial.print("found event ");
-        Serial.println(calendarEntries[entriesNum].name);
-        Serial.println(calendarEntries[entriesNum].time);
-        if (calendarEntries[entriesNum].day == -1) {
-            Serial.println("unable to match day for");
+        if (location && location < end)
+        {
+            int locationLength = min(MAX_STRING_LENGTH, strchr(location, '\n') - location);
+            strncpy(calendarEntries[entriesNum].location, location, locationLength);
+            calendarEntries[entriesNum].location[locationLength] = 0;
         }
         ++entriesNum;
+        if (entriesNum >= MAX_NUMBER_ENTRIES) {
+            Serial.println(F("Too many events found cut at 128"));
+            break;
+        }
     }
-    Serial.println("Found total events");
+    Serial.println(F("Found total events"));
     Serial.println(entriesNum);
     // Sort calendarEntries by time
     qsort(calendarEntries, entriesNum, sizeof(entry), cmp);
@@ -431,7 +457,7 @@ void Calendar::drawData()
         // If it overflowed, set column to clogged and add one event as not shown
         if (!s)
         {
-            Serial.print("overflowed at ");
+            Serial.print(F("overflowed at "));
             Serial.println(calendarEntries[i].name);
             ++cloggedCount[calendarEntries[i].day];
             clogged[calendarEntries[i].day] = 1;
@@ -449,7 +475,7 @@ void Calendar::drawData()
             display.setTextColor(7, 0);
             display.setFont(&FreeSans9pt7b);
             display.print(cloggedCount[i]);
-            display.print(" more events");
+            display.print(F(" more events"));
         }
     }
 }

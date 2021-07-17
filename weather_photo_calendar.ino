@@ -77,10 +77,8 @@ void photoPage() {
     // Join wifi
     display.joinAP(SECRET_SSID, SECRET_PASS);
 
-    Serial.println(display.drawImage(SECRET_PHOTO_URL, display.PNG, 0, 0));
+    Serial.println(display.drawImage(SECRET_PHOTO_URL, display.JPG, 0, 0));
     display.display();
-
-    delay(100);
 }
 
 void readTouchPad() {
@@ -137,7 +135,7 @@ void setup()
     readTouchPad();
 
     refreshDisplay(false);
-    uint64_t sleepUs = CALENDAR_DELAY_US;
+    // uint64_t sleepUs = CALENDAR_DELAY_US;
     switch (page) {
       case PAGE_WEATHER:
         weather.draw();
@@ -154,6 +152,7 @@ void setup()
     }
 
     // Go to sleep
+    delay(1000);
     Serial.println(F("Going to sleep"));
     esp_sleep_enable_timer_wakeup(CALENDAR_DELAY_US);
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_34, 1);
