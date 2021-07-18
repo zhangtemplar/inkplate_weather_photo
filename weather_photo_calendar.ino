@@ -55,10 +55,17 @@ Inkplate display(INKPLATE_1BIT);
 #define PAGE_WEATHER 0
 #define PAGE_PHOTO 1
 #define PAGE_CALENDAR 2
-RTC_DATA_ATTR char page = PAGE_PHOTO;
+RTC_DATA_ATTR char page = PAGE_CALENDAR;
 RTC_DATA_ATTR char previousPage = -1;
 
 Weather weather;
+
+/* show images from sd card */
+#include "SdFat.h"               //Include library for SD card
+SdFile file;                     // Create SdFile object used for accessing files on SD card
+RTC_DATA_ATTR int sdFileIndex = 0;
+char sdFileName[128];
+/* sd card end ======================================== */
 
 /*
  * Refresh display when needed.
@@ -75,10 +82,37 @@ void photoPage() {
     // Join wifi
     display.joinAP(SECRET_SSID, SECRET_PASS);
 
-    Serial.println(display.drawImage(SECRET_PHOTO_URL, display.PNG, 0, 0));
+    Serial.println(display.drawImage(SECRET_PHOTO_URL, display.JPG, 0, 0));
     display.display();
 
     delay(100);
+}
+
+void localPhotoPage() {
+    // Join wifi
+    if (!display.sdCardInit()) {
+      display.println(F("SD Card error!"));
+      Serial.println(F("SD Card error!"));
+      display.partialUpdate();
+      return;
+    }
+    Serial.println("SD Card OK! Reading image...");
+    sprintf(sdFileName, "eink/%d.png", sdFileIndex);
+    sdFileName[15] = 0;
+    if (!display.drawImage(sdFileName, display.PNG, 0, 0)) {
+      // unable open the image
+      if (sdFileIndex > 0) {
+        sdFileIndex = 0;
+        display.drawImage("eink/0.png", display.PNG, 0, 0);
+      } else {
+        display.println(F("No valid image is found! Please put image as eink/0.png, eink/1.png"));
+        Serial.println(F("No valid image is found! Please put image as eink/0.png, eink/1.png"));
+        display.partialUpdate();
+        return;
+      }
+    }
+    sdFileIndex += 1;
+    display.display();
 }
 
 void readTouchPad() {
@@ -135,24 +169,20 @@ void setup()
     readTouchPad();
 
     refreshDisplay(false);
-    uint64_t sleepUs = PHOTO_DELAY_US;
     switch (page) {
       case PAGE_WEATHER:
         weather.draw();
-        sleepUs = WEATHER_DELAY_US;
         break;
       case PAGE_PHOTO:
         photoPage();
-        sleepUs = PHOTO_DELAY_US;
         break;
       default:
-        Serial.println(F("unsupported page"));
-        photoPage();
+        localPhotoPage();
     }
 
     // Go to sleep
     Serial.println(F("Going to sleep"));
-    esp_sleep_enable_timer_wakeup(sleepUs);
+    esp_sleep_enable_timer_wakeup(PHOTO_DELAY_US);
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_34, 1);
     (void)esp_deep_sleep_start();
 }

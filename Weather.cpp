@@ -240,8 +240,7 @@ void Weather::draw()
             display.setTextSize(3);
             display.print(F("City not in Metaweather Database"));
             display.display();
-            while (1)
-                ;
+            return;
         }
 
         // Get all relevant data, see WeatherNetwork.cpp for info
