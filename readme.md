@@ -8,9 +8,10 @@ This repository includes code for building a weather station and photo frame fro
 
 You could use touch pad to switch from three functions: weather station, web photo and local photo. The content will be updated every 4 hours and could be modified via `*_DELAY_US` in weather_photo_calendar.ino.
 
-![IMG_2002](/Users/qiangzhang/Downloads/IMG_2002.JPG)
+![IMG_2002](https://raw.githubusercontent.com/zhangtemplar/zhangtemplar.github.io/master/uPic/2021_07_18_17_20_04_IMG_2002.jpg)
 
-![IMG_2003](/Users/qiangzhang/Downloads/IMG_2003.JPG)
+![IMG_2003](https://raw.githubusercontent.com/zhangtemplar/zhangtemplar.github.io/master/uPic/2021_07_18_17_20_14_IMG_2003.jpg)
+
 
 # Implementation
 
