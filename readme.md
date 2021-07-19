@@ -1,6 +1,6 @@
 # Introduction
 
-This repository includes code for building a weather station and photo frame from [Inkplate 10](https://inkplate.readthedocs.io/).
+[inkplate_weather_photo](https://github.com/zhangtemplar/inkplate_weather_photo) includes code for building a weather station and photo frame from [Inkplate 10](https://inkplate.readthedocs.io/).
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/PXjKgfOjtBk" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
@@ -12,6 +12,14 @@ You could use touch pad to switch from three functions: weather station, web pho
 
 ![IMG_2003](https://raw.githubusercontent.com/zhangtemplar/zhangtemplar.github.io/master/uPic/2021_07_18_17_20_14_IMG_2003.jpg)
 
+To use for your own, please make sure
+- create `settings.h` in your root directory with the following fields:
+  - `int SECRET_TIMEZONE` your time zone;
+  - `char SECRET_CITY[128]` latitude and longitude of the location for weather, e.g., "1.234,5,678". Make sure your location could be found by `https://www.metaweather.com/api/location/search/?lattlong=`;
+  - `char *SECRET_SSID` your WIFI SSID;
+  - `char *SECRET_PASS` your WIFI password;
+  - `char *SECRET_PHOTO_URL` the url for web photo frame;
+- for local photo, please put your images in microsd card's `eink` directory and images should be png, which have name like 0.png, 1.png. The name should start from 0 and continuous increasing.
 
 # Implementation
 
