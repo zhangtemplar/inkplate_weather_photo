@@ -315,7 +315,11 @@ void WeatherNetwork::findCity(char *city)
                     Serial.println(location);
                 }
             }
+        } else {
+            Serial.println(F("Empty response for city search"));
         }
+    } else {
+            Serial.println(F("wrong response for city search"));
     }
 
     // Clear document and end http

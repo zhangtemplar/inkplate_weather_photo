@@ -10,7 +10,8 @@ char sdFileName[128];
 extern Inkplate display;
 
 void LocalPhoto::draw() {
-    // Join wifi
+    // use 3 bit for image
+    display.setDisplayMode(INKPLATE_3BIT);
     if (!display.sdCardInit()) {
       display.println(F("SD Card error!"));
       Serial.println(F("SD Card error!"));

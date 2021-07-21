@@ -227,6 +227,8 @@ void Weather::drawCurrent()
 
 void Weather::draw()
 {
+    // use 1 bit for weather
+    display.setDisplayMode(INKPLATE_1BIT);
     Serial.println(F("weather full refresh"));
     // Calling our begin from weatherNetwork.h file
     weatherNetwork.begin(SECRET_CITY);

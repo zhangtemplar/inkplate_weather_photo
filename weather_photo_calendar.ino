@@ -75,6 +75,7 @@ void refreshDisplay(bool forceClear);
 void readTouchPad();
 
 void photoPage() {
+    display.setDisplayMode(INKPLATE_3BIT);
     // Join wifi
     display.joinAP(SECRET_SSID, SECRET_PASS);
 
