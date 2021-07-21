@@ -31,6 +31,9 @@
 // For Weather
 #include "Weather.h"
 
+// for local photo
+#include "LocalPhoto.h"
+
 // Delay between API calls
 // wait for 4 hours before next photo update
 #define PHOTO_DELAY_US 4 * 60 * 60 * 1000 * 1000
@@ -59,14 +62,7 @@ RTC_DATA_ATTR char page = PAGE_CALENDAR;
 RTC_DATA_ATTR char previousPage = -1;
 
 Weather weather;
-
-/* show images from sd card */
-#include "SdFat.h"               //Include library for SD card
-SdFile file;                     // Create SdFile object used for accessing files on SD card
-RTC_DATA_ATTR int sdFileIndex = 0;
-char sdFileName[128];
-/* sd card end ======================================== */
-
+LocalPhoto localPhoto;
 /*
  * Refresh display when needed.
  * 
@@ -86,33 +82,6 @@ void photoPage() {
     display.display();
 
     delay(100);
-}
-
-void localPhotoPage() {
-    // Join wifi
-    if (!display.sdCardInit()) {
-      display.println(F("SD Card error!"));
-      Serial.println(F("SD Card error!"));
-      display.partialUpdate();
-      return;
-    }
-    Serial.println("SD Card OK! Reading image...");
-    sprintf(sdFileName, "eink/%d.png", sdFileIndex);
-    sdFileName[15] = 0;
-    if (!display.drawImage(sdFileName, display.PNG, 0, 0)) {
-      // unable open the image
-      if (sdFileIndex > 0) {
-        sdFileIndex = 0;
-        display.drawImage("eink/0.png", display.PNG, 0, 0);
-      } else {
-        display.println(F("No valid image is found! Please put image as eink/0.png, eink/1.png"));
-        Serial.println(F("No valid image is found! Please put image as eink/0.png, eink/1.png"));
-        display.partialUpdate();
-        return;
-      }
-    }
-    sdFileIndex += 1;
-    display.display();
 }
 
 void readTouchPad() {
@@ -177,7 +146,7 @@ void setup()
         photoPage();
         break;
       default:
-        localPhotoPage();
+        localPhoto.draw();
     }
 
     // Go to sleep
