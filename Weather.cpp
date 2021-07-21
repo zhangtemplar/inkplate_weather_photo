@@ -227,52 +227,33 @@ void Weather::drawCurrent()
 
 void Weather::draw()
 {
-    if (refreshes % fullRefresh == 0)
+    Serial.println(F("weather full refresh"));
+    // Calling our begin from weatherNetwork.h file
+    weatherNetwork.begin(SECRET_CITY);
+
+    // If city not found, do nothing
+    if (weatherNetwork.location == -1)
     {
-        Serial.println(F("weather full refresh"));
-        // Calling our begin from weatherNetwork.h file
-        weatherNetwork.begin(SECRET_CITY);
-
-        // If city not found, do nothing
-        if (weatherNetwork.location == -1)
-        {
-            display.setCursor(50, 290);
-            display.setTextSize(3);
-            display.print(F("City not in Metaweather Database"));
-            display.display();
-            return;
-        }
-
-        // Get all relevant data, see WeatherNetwork.cpp for info
-        weatherNetwork.getTime(currentTime);
-        weatherNetwork.getTime(currentTime);
-        weatherNetwork.getDays(days[0], days[1], days[2], days[3]);
-        weatherNetwork.getData(city, temps[0], temps[1], temps[2], temps[3], currentTemp, currentWind, currentTime,
-                        currentWeather, currentWeatherAbbr, abbr1, abbr2, abbr3, abbr4);
-
-        // Draw data, see functions below for info
-        drawTime();
-        drawWeather();
-        drawCurrent();
-        drawTemps();
-        drawCity();
-
+        display.setCursor(50, 290);
+        display.setTextSize(3);
+        display.print(F("City not in Metaweather Database"));
         display.display();
-    }
-    else
-    {
-        Serial.println(F("weather partial refresh"));
-        // Refresh only the clock
-        weatherNetwork.getTime(currentTime);
-
-        drawTime();
-        drawWeather();
-        drawCurrent();
-        drawTemps();
-        drawCity();
-
-        display.partialUpdate();
+        return;
     }
 
-    ++refreshes;
+    // Get all relevant data, see WeatherNetwork.cpp for info
+    weatherNetwork.getTime(currentTime);
+    weatherNetwork.getTime(currentTime);
+    weatherNetwork.getDays(days[0], days[1], days[2], days[3]);
+    weatherNetwork.getData(city, temps[0], temps[1], temps[2], temps[3], currentTemp, currentWind, currentTime,
+                    currentWeather, currentWeatherAbbr, abbr1, abbr2, abbr3, abbr4);
+
+    // Draw data, see functions below for info
+    drawTime();
+    drawWeather();
+    drawCurrent();
+    drawTemps();
+    drawCity();
+
+    display.display();
 }
