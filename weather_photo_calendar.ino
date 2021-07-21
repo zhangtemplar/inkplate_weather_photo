@@ -34,6 +34,9 @@
 // for local photo
 #include "LocalPhoto.h"
 
+// Flickr web photo
+#include "Flickr.h"
+
 // Delay between API calls
 // wait for 4 hours before next photo update
 #define PHOTO_DELAY_US 4 * 60 * 60 * 1000 * 1000
@@ -58,11 +61,12 @@ Inkplate display(INKPLATE_1BIT);
 #define PAGE_WEATHER 0
 #define PAGE_PHOTO 1
 #define PAGE_CALENDAR 2
-RTC_DATA_ATTR char page = PAGE_CALENDAR;
+RTC_DATA_ATTR char page = PAGE_WEATHER;
 RTC_DATA_ATTR char previousPage = -1;
 
 Weather weather;
 LocalPhoto localPhoto;
+Flickr flickr;
 /*
  * Refresh display when needed.
  * 
@@ -73,17 +77,6 @@ LocalPhoto localPhoto;
 void refreshDisplay(bool forceClear);
 // Read the latest touch pad event (via interrupt register)
 void readTouchPad();
-
-void photoPage() {
-    display.setDisplayMode(INKPLATE_3BIT);
-    // Join wifi
-    display.joinAP(SECRET_SSID, SECRET_PASS);
-
-    Serial.println(display.drawImage(SECRET_PHOTO_URL, display.JPG, 0, 0));
-    display.display();
-
-    delay(100);
-}
 
 void readTouchPad() {
     // According to the schema, touch pad are connected to port B 2, 3 and 4 accordingly
@@ -144,7 +137,7 @@ void setup()
         weather.draw();
         break;
       case PAGE_PHOTO:
-        photoPage();
+        flickr.draw();
         break;
       default:
         localPhoto.draw();
