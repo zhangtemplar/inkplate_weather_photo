@@ -61,12 +61,12 @@ Inkplate display(INKPLATE_1BIT);
 #define PAGE_WEATHER 0
 #define PAGE_PHOTO 1
 #define PAGE_CALENDAR 2
-RTC_DATA_ATTR char page = PAGE_WEATHER;
+RTC_DATA_ATTR char page = PAGE_PHOTO;
 RTC_DATA_ATTR char previousPage = -1;
 
 Weather weather;
 LocalPhoto localPhoto;
-Flickr flickr;
+// Flickr flickr;
 /*
  * Refresh display when needed.
  * 
@@ -77,6 +77,44 @@ Flickr flickr;
 void refreshDisplay(bool forceClear);
 // Read the latest touch pad event (via interrupt register)
 void readTouchPad();
+
+void imageUrl(char *a) {
+    String url;
+    HTTPClient http;
+    if (http.begin("https://source.unsplash.com/random/1200x800") && http.GET() > 0)
+    {
+        url = http.getString();
+
+        int urlStart = url.indexOf("href=\"") + 6;
+        int urlEnd = url.indexOf("\">", urlStart);
+
+        url = url.substring(urlStart, urlEnd);
+        url = url.substring(0, url.indexOf("?")) + "?crop=entropy&fit=crop&fm=png&h=800&w=1200";
+
+        Serial.println(url);
+        strcpy(a, url.c_str());
+    }
+    else
+    {
+        display.println("HTTP error");
+        display.display();
+    }
+    http.end();
+}
+
+void webPhoto() {
+    display.setDisplayMode(INKPLATE_3BIT);
+  // Join wifi
+    display.joinAP(SECRET_SSID, SECRET_PASS);
+
+    char url[256];
+    imageUrl(url);
+    Serial.print(F("to display image from "));
+    Serial.println(url);
+
+    Serial.println(display.drawImage(url, display.PNG, 0, 0, true));
+    display.display();
+}
 
 void readTouchPad() {
     // According to the schema, touch pad are connected to port B 2, 3 and 4 accordingly
@@ -137,7 +175,8 @@ void setup()
         weather.draw();
         break;
       case PAGE_PHOTO:
-        flickr.draw();
+        // flickr.draw();
+        webPhoto();
         break;
       default:
         localPhoto.draw();

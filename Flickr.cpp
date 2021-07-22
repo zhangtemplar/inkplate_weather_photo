@@ -20,16 +20,12 @@ char flickr_photo_url[256];
 // for the device. This could not be a class variable or function argument
 // otherwise it will cause stack overflow
 extern Inkplate display;
-// Http object
-HTTPClient http;
 
 Flickr::Flickr() {
     sprintf(flickr_query_url, "https://www.flickr.com/services/rest/?method=flickr.photos.search&api_key=%s&tags=BW&format=json&nojsoncallback=1&per_page=1&page=10", FLICKR_KEY);
 }
 
 void Flickr::draw() {
-    http.getStream().setNoDelay(true);
-    http.getStream().setTimeout(1);
     // use 3 bit for image
     display.setDisplayMode(INKPLATE_3BIT);
     // Initiating wifi, like in BasicHttpClient example
@@ -68,12 +64,17 @@ void Flickr::draw() {
     }
     Serial.print(F("to display image from flickr "));
     Serial.println(flickr_photo_url);
-    Serial.println(display.drawImage(flickr_photo_url, 0, 0));
+    // apply dither
+    Serial.println(display.drawImage(F("https://live.staticflickr.com/8304/7922047866_ccd2886b40_c_d.jpg"), 0, 0, 1));
     display.display();
     delay(100);
 }
 
 bool Flickr::list() {
+    // Http object
+    HTTPClient http;
+    http.getStream().setNoDelay(true);
+    http.getStream().setTimeout(1);
     http.begin(flickr_query_url);
     Serial.println(flickr_query_url);
 
@@ -109,10 +110,15 @@ bool Flickr::list() {
     } else {
         Serial.println(F("error code when listing photo from flickr"));
     }
+    http.end();
     return false;
 }
 
 bool Flickr::querySize() {
+    // Http object
+    HTTPClient http;
+    http.getStream().setNoDelay(true);
+    http.getStream().setTimeout(1);
     http.begin(flickr_size_url);
     Serial.println(flickr_size_url);
 
