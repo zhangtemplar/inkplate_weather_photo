@@ -48,7 +48,7 @@
 // Inkplate object
 // 3 Bit will fail weather display
 Inkplate display(INKPLATE_1BIT);
-
+#define MIN_VOLTAGE 3.4
 /*
  * which page to show
  * 0: weather
@@ -154,12 +154,37 @@ void refreshDisplay(bool forceClear)
     }
 }
 
+/**
+ * @brief Check battery, if low show a warning
+ * 
+ * @return true if battery is ok
+ * @return false if battery is low
+ */
+bool checkBattery() {
+  float voltage = display.readBattery();
+  if (voltage < MIN_VOLTAGE) {
+    display.println("Battery low");
+    display.print(voltage, 2);
+    display.println("V");
+    display.display();
+    return false;
+  }
+  Serial.print(voltage, 2);
+  Serial.println("V");
+  return true;
+}
+
 // Main function
 void setup()
 {
     // common set up
     Serial.begin(115200);
     display.begin();
+
+    // check battery
+    if (!checkBattery()) {
+      return;
+    }
 
     // Setup mcp interrupts
     for (int touchPadPin = 10; touchPadPin <=12; touchPadPin++) {
