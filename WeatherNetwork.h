@@ -24,8 +24,8 @@ Distributed as-is; no warranty is given.
 extern int SECRET_TIMEZONE;
 
 // wifi ssid and password
-extern char *SECRET_SSID;
-extern char *SECRET_PASS;
+extern char SECRET_SSID[128];
+extern char SECRET_PASS[128];
 
 #ifndef WEATHER_NETWORK_H
 #define WEATHER_NETWORK_H

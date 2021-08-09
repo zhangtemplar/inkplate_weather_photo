@@ -10,23 +10,15 @@
 #error "Wrong board selection for this example, please select Inkplate 10 in the boards menu."
 #endif
 
-// ----------------------------------
-/*
- * Please create your own settings.h file with the following variables
- * // time zone as int
- * int SECRET_TIMEZONE = -7;
- * // City name to de displayed on the bottom
- * char SECRET_CITY[128] = "latitude,longitude";
- * // Change to your wifi ssid and password
- * char *SECRET_SSID = "";
- * char *SECRET_PASS = "";
- * // url to fetch images, for example apiflash.com
- * char *SECRET_PHOTO_URL = ""
- */
+// Please create your own settings.h file
 #include "settings.h"
 
 // Include Inkplate library to the sketch
 #include "Inkplate.h"
+
+// for reading the configuration from file
+#include <ArduinoJson.h>
+#include "SdFat.h"
 
 // For Weather
 #include "Weather.h"
@@ -174,6 +166,40 @@ bool checkBattery() {
   return true;
 }
 
+/**
+ * @brief Read settings from a json file in local microsd card named as settings.json
+ * 
+ * @return true if setting is read succesfully
+ * @return false if setting failed to read, then hard coded setting will be used instead.
+ */
+bool readSettings() {
+  if (!display.sdCardInit()) {
+    display.println(F("SD Card error!"));
+    Serial.println(F("SD Card error!"));
+    display.partialUpdate();
+    return false;
+  }
+  SdFile file2;
+  Serial.println(F("open settings.json"));
+  if (!file2.open("settings.json", O_RDONLY)) {
+    Serial.println(F("failed to open settings.json"));
+    return false;
+  }
+  Serial.println(F("parse settings.json"));
+  StaticJsonDocument<1024> doc;
+  DeserializationError error = deserializeJson(doc, file2);
+  if (error) {
+    Serial.println(F("failed to read setttings from settings.json will use default value"));
+    return false;
+  }
+  SECRET_TIMEZONE = doc["timezone"] | SECRET_TIMEZONE;
+  strlcpy(SECRET_CITY, doc["city"] | SECRET_CITY, sizeof(SECRET_CITY));
+  strlcpy(SECRET_SSID, doc["ssid"] | SECRET_SSID, sizeof(SECRET_SSID));
+  strlcpy(SECRET_PASS, doc["wifi_password"] | SECRET_PASS, sizeof(SECRET_PASS));
+  strlcpy(FLICKR_KEY, doc["flicker_key"] | FLICKR_KEY, sizeof(FLICKR_KEY));
+  return true;
+}
+
 // Main function
 void setup()
 {
@@ -185,6 +211,8 @@ void setup()
     if (!checkBattery()) {
       return;
     }
+
+    readSettings();
 
     // Setup mcp interrupts
     for (int touchPadPin = 10; touchPadPin <=12; touchPadPin++) {

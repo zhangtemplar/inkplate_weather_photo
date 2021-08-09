@@ -5,10 +5,9 @@
 #include <HTTPClient.h>
 #include <WiFi.h>
 
-extern char* FLICKR_KEY;
-extern char* SECRET_SSID;
-extern char* SECRET_PASS;
-extern char* FLICKR_KEY;
+extern char FLICKR_KEY[128];
+extern char SECRET_SSID[128];
+extern char SECRET_PASS[128];
 
 #define WIDTH 1200
 #define HEIGHT 825

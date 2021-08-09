@@ -16,9 +16,9 @@ To use for your own, please make sure
 - create `settings.h` in your root directory with the following fields:
   - `int SECRET_TIMEZONE` your time zone;
   - `char SECRET_CITY[128]` latitude and longitude of the location for weather, e.g., "1.234,5,678". Make sure your location could be found by `https://www.metaweather.com/api/location/search/?lattlong=`;
-  - `char *SECRET_SSID` your WIFI SSID;
-  - `char *SECRET_PASS` your WIFI password;
-  - `char *SECRET_PHOTO_URL` the url for web photo frame;
+  - `char SECRET_SSID[128]` your WIFI SSID;
+  - `char SECRET_PASS[128]` your WIFI password;
+  - `char FLICKR_KEY[128]` the flicker key to access flicker photo [not used].
 - for local photo, please put your images in microsd card's `eink` directory and images should be png, which have name like 0.png, 1.png. The name should start from 0 and continuous increasing.
 
 # Implementation
