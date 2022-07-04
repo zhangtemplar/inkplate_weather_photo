@@ -23,15 +23,28 @@ Distributed as-is; no warranty is given.
 
 #include <ArduinoJson.h>
 
+// To get timeZone from main file
+extern int SECRET_TIMEZONE;
+
+// from settings.h
+extern char SECRET_CITY[128];
+// wifi ssid and password
+extern char SECRET_SSID[128];
+extern char SECRET_PASS[128];
+
+// open weather api key
+extern char WEATHER_API_KEY[128];
+
 // Static Json from ArduinoJson library
-StaticJsonDocument<6000> doc;
+// the response is around 16k bytes
+StaticJsonDocument<20000> doc;
 
 // Declared week days
 char weekDays[8][8] = {
     "Mon", "Tue", "Wed", "Thr", "Fri", "Sat", "Sun",
 };
 
-void WeatherNetwork::begin(char *city)
+void WeatherNetwork::begin()
 {
     // Initiating wifi, like in BasicHttpClient example
     WiFi.mode(WIFI_STA);
@@ -56,9 +69,6 @@ void WeatherNetwork::begin(char *city)
 
     // Find internet time
     setTime();
-
-    // Search for given cities woeid
-    findCity(city);
 }
 
 // Gets time from ntp server
@@ -138,7 +148,7 @@ void WeatherNetwork::getData(char *city, char *temp1, char *temp2, char *temp3, 
 
     // Add woeid to api call
     char url[256];
-    sprintf(url, "https://www.metaweather.com/api/location/%d/", location);
+    sprintf(url, "https://api.openweathermap.org/data/2.5/forecast?%s&appid=%s&units=metric", SECRET_CITY, WEATHER_API_KEY);
 
     // Initiate http
     http.begin(url);
@@ -162,24 +172,33 @@ void WeatherNetwork::getData(char *city, char *temp1, char *temp2, char *temp3, 
             }
             else
             {
+                strcpy(city, doc[F("city")][F("name")].as<char *>());
+                Serial.print(F("found weather for city: "));
+                Serial.println(city);
+                // some rise and sun set
+                // strcpy(sunrise, doc["city"]["sunrise"].as<char *>());
+                // strcpy(sunset, doc["city"]["sunset"].as<char *>());
+
                 // Set all data got from internet using formatTemp and formatWind defined above
                 // This part relies heavily on ArduinoJson library
-                formatTemp(currentTemp, doc["consolidated_weather"][0][F("the_temp")].as<float>());
-                formatWind(currentWind, doc["consolidated_weather"][0][F("wind_speed")].as<float>());
+                formatTemp(currentTemp, doc[F("list")][0][F("main")][F("temp")].as<float>());
+                formatWind(currentWind, doc[F("list")][0][F("wind")][F("speed")].as<float>());
+                // Humidity
+                // formatWind(humidity, doc[F("list")][0][F("main")][F("humidity")].as<float>());
+                // Weather, use icon for short
+                strcpy(currentWeather, doc[F("list")][0][F("weather")][0][F("main")].as<char *>());
+                strncpy(currentWeatherAbbr, doc[F("list")][0][F("weather")][0][F("icon")].as<char *>(), WEATHER_ABBR_SIZE - 1);
 
-                strcpy(city, doc["title"].as<char *>());
-                strcpy(currentWeather, doc["consolidated_weather"][0]["weather_state_name"].as<char *>());
-                strcpy(currentWeatherAbbr, doc["consolidated_weather"][0]["weather_state_abbr"].as<char *>());
+                // Forecast, the API returns 5 day's weather in unit of 3 hours
+                strncpy(abbr1, doc[F("list")][8][F("weather")][0][F("icon")].as<char *>(), WEATHER_ABBR_SIZE - 1);
+                strncpy(abbr2, doc[F("list")][16][F("weather")][0][F("icon")].as<char *>(), WEATHER_ABBR_SIZE - 1);
+                strncpy(abbr2, doc[F("list")][24][F("weather")][0][F("icon")].as<char *>(), WEATHER_ABBR_SIZE - 1);
+                strncpy(abbr2, doc[F("list")][32][F("weather")][0][F("icon")].as<char *>(), WEATHER_ABBR_SIZE - 1);
 
-                strcpy(abbr1, doc["consolidated_weather"][1]["weather_state_abbr"].as<char *>());
-                strcpy(abbr2, doc["consolidated_weather"][2]["weather_state_abbr"].as<char *>());
-                strcpy(abbr3, doc["consolidated_weather"][3]["weather_state_abbr"].as<char *>());
-                strcpy(abbr4, doc["consolidated_weather"][4]["weather_state_abbr"].as<char *>());
-
-                formatTemp(temp1, doc["consolidated_weather"][1][F("the_temp")].as<float>());
-                formatTemp(temp2, doc["consolidated_weather"][2][F("the_temp")].as<float>());
-                formatTemp(temp3, doc["consolidated_weather"][3][F("the_temp")].as<float>());
-                formatTemp(temp4, doc["consolidated_weather"][4][F("the_temp")].as<float>());
+                formatTemp(temp1, doc[F("list")][8][F("main")][F("temp")].as<float>());
+                formatTemp(temp2, doc[F("list")][16][F("main")][F("temp")].as<float>());
+                formatTemp(temp3, doc[F("list")][24][F("main")][F("temp")].as<float>());
+                formatTemp(temp4, doc[F("list")][32][F("main")][F("temp")].as<float>());
             }
         }
     }
@@ -236,96 +255,3 @@ void WeatherNetwork::getDays(char *day, char *day1, char *day2, char *day3)
     strncpy(day2, weekDays[(dayWeek + 3) % 7], 3);
     strncpy(day3, weekDays[(dayWeek + 4) % 7], 3);
 }
-
-void WeatherNetwork::findCity(char *city)
-{
-    // If not connected to wifi reconnect wifi
-    if (WiFi.status() != WL_CONNECTED)
-    {
-        WiFi.reconnect();
-
-        delay(5000);
-
-        int cnt = 0;
-        Serial.println(F("Waiting for WiFi to reconnect..."));
-        while ((WiFi.status() != WL_CONNECTED))
-        {
-            // Prints a dot every second that wifi isn't connected
-            Serial.print(F("."));
-            delay(1000);
-            ++cnt;
-
-            if (cnt == 7)
-            {
-                Serial.println(F("Can't connect to WIFI, restart initiated."));
-                delay(100);
-                ESP.restart();
-            }
-        }
-    }
-
-    // Wake wifi module and save initial state
-    bool sleep = WiFi.getSleep();
-    WiFi.setSleep(false);
-
-    // Http object
-    HTTPClient http;
-
-    http.getStream().setNoDelay(true);
-    http.getStream().setTimeout(1);
-
-    // Add query param to url
-    char url[256];
-    strcpy(url, "https://www.metaweather.com/api/location/search/?lattlong=");
-    strcat(url, city);
-
-    // Initiate http
-    http.begin(url);
-
-    // Do get request
-    int httpCode = http.GET();
-    if (httpCode == 200) // 200: http success
-    {
-        int32_t len = http.getSize();
-
-        if (len > 0)
-        {
-            // Try to parse JSON object
-            DeserializationError error = deserializeJson(doc, http.getStream());
-
-            // Print error to Serial monitor if one exsists
-            if (error)
-            {
-                Serial.print(F("deserializeJson() failed: "));
-                Serial.println(error.c_str());
-            }
-            else
-            {
-                // Empty list means no matches
-                if (doc.size() == 0)
-                {
-                    Serial.println(F("City not found"));
-                }
-                else
-                {
-                    // Woeid id used for fetching data later on
-                    location = doc[0]["woeid"].as<int>();
-
-                    Serial.println(F("Found city, woied:"));
-                    Serial.println(location);
-                }
-            }
-        } else {
-            Serial.println(F("Empty response for city search"));
-        }
-    } else {
-            Serial.println(F("wrong response for city search"));
-    }
-
-    // Clear document and end http
-    doc.clear();
-    http.end();
-
-    // Return module to initial state
-    WiFi.setSleep(sleep);
-};

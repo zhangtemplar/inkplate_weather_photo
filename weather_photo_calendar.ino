@@ -31,11 +31,11 @@
 
 // Delay between API calls
 // wait for 4 hours before next photo update
-#define PHOTO_DELAY_US 4 * 60 * 60 * 1000 * 1000
+#define PHOTO_DELAY_US 24ll * 60 * 60 * 1000 * 1000
 // wait for 1 hour before next photo update
-#define CALENDAR_DELAY_US 60 * 60 * 1000 * 1000
+//#define CALENDAR_DELAY_US 60 * 60 * 1000 * 1000
 // for weather, delay 1 minute before each call
-#define WEATHER_DELAY_US 60 * 1000 * 1000
+//#define WEATHER_DELAY_US 60 * 1000 * 1000
 
 // Inkplate object
 // 3 Bit will fail weather display
@@ -53,7 +53,7 @@ Inkplate display(INKPLATE_1BIT);
 #define PAGE_WEATHER 0
 #define PAGE_PHOTO 1
 #define PAGE_CALENDAR 2
-RTC_DATA_ATTR char page = PAGE_PHOTO;
+RTC_DATA_ATTR char page = PAGE_WEATHER;
 RTC_DATA_ATTR char previousPage = -1;
 
 Weather weather;

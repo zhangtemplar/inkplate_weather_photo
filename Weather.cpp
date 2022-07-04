@@ -6,10 +6,10 @@
 #include "Fonts/Roboto_Light_48.h"
 
 /* RTC Data --Cannot be Class variable */
-RTC_DATA_ATTR char abbr1[16];
-RTC_DATA_ATTR char abbr2[16];
-RTC_DATA_ATTR char abbr3[16];
-RTC_DATA_ATTR char abbr4[16];
+RTC_DATA_ATTR char abbr1[WEATHER_ABBR_SIZE];
+RTC_DATA_ATTR char abbr2[WEATHER_ABBR_SIZE];
+RTC_DATA_ATTR char abbr3[WEATHER_ABBR_SIZE];
+RTC_DATA_ATTR char abbr4[WEATHER_ABBR_SIZE];
 
 // Variables for storing temperature
 RTC_DATA_ATTR char temps[8][4] = {
@@ -37,21 +37,23 @@ RTC_DATA_ATTR char currentWind[16] = "0m/s";
 RTC_DATA_ATTR char currentTime[16] = "9:41";
 
 RTC_DATA_ATTR char currentWeather[32] = "-";
-RTC_DATA_ATTR char currentWeatherAbbr[8] = "th";
+// default weather: clear sky
+RTC_DATA_ATTR char currentWeatherAbbr[WEATHER_ABBR_SIZE] = "01";
 /* RTC Data End ======================================== */
 
 // Human readable city name
 char city[128];
-// Contants used for drawing icons
-char abbrs[32][16] = {"sn", "sl", "h", "t", "hr", "lr", "s", "hc", "lc", "c"};
-const uint8_t *logos[16] = {icon_sn, icon_sl, icon_h, icon_t, icon_hr, icon_lr, icon_s, icon_hc, icon_lc, icon_c};
-const uint8_t *s_logos[16] = {icon_s_sn, icon_s_sl, icon_s_h,  icon_s_t,  icon_s_hr,
-                            icon_s_lr, icon_s_s,  icon_s_hc, icon_s_lc, icon_s_c};
+#define NUMBER_WEATHER_ABBRS 11
+// Contants used for drawing icons defined in https://openweathermap.org/weather-conditions
+char abbrs[NUMBER_WEATHER_ABBRS][WEATHER_ABBR_SIZE] = {"13", "50", "11", "09", "10", "09", "03", "04", "02", "01"};
+const uint8_t *logos[NUMBER_WEATHER_ABBRS] = {icon_sn, icon_sl, icon_h, icon_t, icon_hr, icon_lr, icon_s, icon_hc, icon_hc, icon_lc, icon_c};
+const uint8_t *s_logos[NUMBER_WEATHER_ABBRS] = {icon_s_sn, icon_s_sl, icon_s_h,  icon_s_t,  icon_s_hr,
+                            icon_s_lr, icon_s_s,  icon_s_hc, icon_s_hc, icon_s_lc, icon_s_c};
 // Function for drawing weather info
 void Weather::drawWeather()
 {
     // Searching for weather state abbreviation
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < 11; ++i)
     {
         // If found draw specified icon
         if (strcmp(abbrs[i], currentWeatherAbbr) == 0)
@@ -231,20 +233,9 @@ void Weather::draw()
     display.setDisplayMode(INKPLATE_1BIT);
     Serial.println(F("weather full refresh"));
     // Calling our begin from weatherNetwork.h file
-    weatherNetwork.begin(SECRET_CITY);
-
-    // If city not found, do nothing
-    if (weatherNetwork.location == -1)
-    {
-        display.setCursor(50, 290);
-        display.setTextSize(3);
-        display.print(F("City not in Metaweather Database"));
-        display.display();
-        return;
-    }
+    weatherNetwork.begin();
 
     // Get all relevant data, see WeatherNetwork.cpp for info
-    weatherNetwork.getTime(currentTime);
     weatherNetwork.getTime(currentTime);
     weatherNetwork.getDays(days[0], days[1], days[2], days[3]);
     weatherNetwork.getData(city, temps[0], temps[1], temps[2], temps[3], currentTemp, currentWind, currentTime,

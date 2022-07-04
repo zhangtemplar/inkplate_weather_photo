@@ -20,15 +20,10 @@ Distributed as-is; no warranty is given.
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 
-// To get timeZone from main file
-extern int SECRET_TIMEZONE;
-
-// wifi ssid and password
-extern char SECRET_SSID[128];
-extern char SECRET_PASS[128];
-
 #ifndef WEATHER_NETWORK_H
 #define WEATHER_NETWORK_H
+// string length for weather abbreviation
+#define WEATHER_ABBR_SIZE 3
 
 // All functions defined in WeatherNetwork.cpp
 
@@ -36,7 +31,7 @@ class WeatherNetwork
 {
   public:
     // Functions we can access in main file
-    void begin(char *city);
+    void begin();
     void getTime(char *timeStr);
     void getData(char *city, char *temp1, char *temp2, char *temp3, char *temp4, char *currentTemp, char *currentWind,
                  char *currentTime, char *currentWeather, char *currentWeatherAbbr, char *abbr1, char *abbr2,
@@ -49,7 +44,6 @@ class WeatherNetwork
   private:
     // Functions called from within our class
     void setTime();
-    void findCity(char *city);
 };
 
 #endif
