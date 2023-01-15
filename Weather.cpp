@@ -1,71 +1,66 @@
 // Include Inkplate library to the sketch
 #include "Weather.h"
 // Including fonts used
-#include "Fonts/Roboto_Light_120.h"
-#include "Fonts/Roboto_Light_36.h"
-#include "Fonts/Roboto_Light_48.h"
+#include "Fonts/FreeSerifBold18pt7b.h"
+#include "Fonts/FreeSerifBold12pt7b.h"
 
 /* RTC Data --Cannot be Class variable */
-RTC_DATA_ATTR char abbr1[WEATHER_ABBR_SIZE];
-RTC_DATA_ATTR char abbr2[WEATHER_ABBR_SIZE];
-RTC_DATA_ATTR char abbr3[WEATHER_ABBR_SIZE];
-RTC_DATA_ATTR char abbr4[WEATHER_ABBR_SIZE];
-
-// Variables for storing temperature
-RTC_DATA_ATTR char temps[8][4] = {
-    "0F",
-    "0F",
-    "0F",
-    "0F",
-};
-
-// Variables for storing days of the week
-RTC_DATA_ATTR char days[8][4] = {
-    "",
-    "",
-    "",
-    "",
-};
-
-// Variable for counting partial refreshes
-RTC_DATA_ATTR unsigned refreshes = 0;
-
-// Variables for storing current time and weather info
-RTC_DATA_ATTR char currentTemp[16] = "0F";
-RTC_DATA_ATTR char currentWind[16] = "0m/s";
-
-RTC_DATA_ATTR char currentTime[16] = "9:41";
-
-RTC_DATA_ATTR char currentWeather[32] = "-";
-// default weather: clear sky
-RTC_DATA_ATTR char currentWeatherAbbr[WEATHER_ABBR_SIZE] = "01";
+RTC_DATA_ATTR char currentTime[17] = "Www Mmm dd hh:mm";
+RTC_DATA_ATTR char temperature_wind[27] = "Temp -xx.xxC Wind yyy.yyNW";
+RTC_DATA_ATTR char humidity_cloud_uvi[31] = "Humid xxx% Cloud yyy% UVI zzz%";
 /* RTC Data End ======================================== */
 
-// Human readable city name
-char city[128];
 #define NUMBER_WEATHER_ABBRS 11
+// wind direction
+const char wind_direction[8][3] = {"N", "NE", "E", "SE", "S", "SW", "W", "WN"};
 // Contants used for drawing icons defined in https://openweathermap.org/weather-conditions
-char abbrs[NUMBER_WEATHER_ABBRS][WEATHER_ABBR_SIZE] = {"13", "50", "11", "09", "10", "09", "03", "04", "02", "01"};
+const char abbrs[NUMBER_WEATHER_ABBRS][WEATHER_ABBR_SIZE] = {"13", "50", "11", "09", "10", "09", "03", "04", "02", "01"};
 const uint8_t *logos[NUMBER_WEATHER_ABBRS] = {icon_sn, icon_sl, icon_h, icon_t, icon_hr, icon_lr, icon_s, icon_hc, icon_hc, icon_lc, icon_c};
 const uint8_t *s_logos[NUMBER_WEATHER_ABBRS] = {icon_s_sn, icon_s_sl, icon_s_h,  icon_s_t,  icon_s_hr,
                             icon_s_lr, icon_s_s,  icon_s_hc, icon_s_hc, icon_s_lc, icon_s_c};
 // Function for drawing weather info
-void Weather::drawWeather()
+void Weather::drawHourly()
 {
-    // Searching for weather state abbreviation
-    for (int i = 0; i < 11; ++i)
-    {
-        // If found draw specified icon
-        if (strcmp(abbrs[i], currentWeatherAbbr) == 0)
-            display.drawBitmap(50, 50, logos[i], 152, 152, BLACK);
+    Serial.println(F("weather drawHourly"));
+    // Draw a line plot for hourly temperature
+    // x=8, y=228, w=18*48, h=200
+    int left = 8;
+    const int top = 228;
+    const int bottom = 433;
+    const int space = 12;
+    // find min and max temerature
+    float minTemperature = 200, maxTemperature = -100;
+    for (int i = 0; i < NUMBER_HOURLY; i++) {
+        minTemperature = minTemperature < weatherReport.hourly[i].temperature.day ? minTemperature : weatherReport.hourly[i].temperature.day;
+        maxTemperature = maxTemperature > weatherReport.hourly[i].temperature.day ? maxTemperature : weatherReport.hourly[i].temperature.day;
     }
-
-    // Draw weather state
-    display.setTextColor(BLACK, WHITE);
-    display.setFont(&Roboto_Light_36);
+    // print y axis
+    display.setFont(&FreeSerifBold12pt7b);
     display.setTextSize(1);
-    display.setCursor(40, 270);
-    display.println(currentWeather);
+    display.setTextColor(BLACK, WHITE);
+    display.setCursor(left, top);
+    sprintf(weatherFormat, "%.2fC", maxTemperature);
+    display.println(weatherFormat);
+    display.setCursor(left, bottom);
+    sprintf(weatherFormat, "%.2fC", minTemperature);
+    display.println(weatherFormat);
+
+    const float step = 200.0f / (maxTemperature - minTemperature);
+    Serial.print(F("max temperature "));
+    Serial.print(maxTemperature, DEC);
+    Serial.print(F(" min temperature "));
+    Serial.print(minTemperature, DEC);
+    Serial.print(F(" step "));
+    Serial.println(step, DEC);
+    display.setTextColor(BLACK, WHITE);
+    // shift right for axis
+    left += 100;
+    display.drawRect(left, top - space, 576, 205, BLACK);
+    for (int i = 0; i < NUMBER_HOURLY; i++) {
+        display.setCursor(left + space * i, top + (int) ((maxTemperature - weatherReport.hourly[i].temperature.day) * step));
+        display.println(F("+"));
+        // Serial.println(weatherReport.hourly[i].temperature.day, DEC);
+    }
 }
 
 // Function for drawing current time
@@ -74,157 +69,146 @@ void Weather::drawTime()
     Serial.println(F("weather drawTime"));
     // Drawing current time
     display.setTextColor(BLACK, WHITE);
-    display.setFont(&Roboto_Light_36);
-    display.setTextSize(1);
+    display.setFont(&FreeSerifBold18pt7b);
+    display.setTextSize(2);
 
-    display.setCursor(1024 - 20 * strlen(currentTime), 35);
+    display.setCursor(8, 72);
     display.println(currentTime);
 }
 
 // Function for drawing city name
-void Weather::drawCity()
+void Weather::drawQRCode()
 {
-    // Drawing city name
-    display.setTextColor(BLACK, WHITE);
-    display.setFont(&Roboto_Light_36);
-    display.setTextSize(1);
-
-    display.setCursor(600 - 9 * strlen(city), 790);
-    display.println(city);
+    if (!display.sdCardInit()) {
+      display.setCursor(900, 0);
+      display.println(F("SD Card error!"));
+      Serial.println(F("SD Card error!"));
+      display.partialUpdate();
+      return;
+    }
+    Serial.println(F("weather drawQRCode"));
+    // display.drawImage("wifi.png", 900, 0);
+    display.drawImage("slogan.png", 750, 50);
 }
 
-// Function for drawing temperatures
-void Weather::drawTemps()
-{
-    // Drawing 4 black rectangles in which temperatures will be written
-    int rectWidth = 150;
-    int rectSpacing = (1200 - rectWidth * 4) / 5;
-
-    display.fillRect(1 * rectSpacing + 0 * rectWidth, 450, rectWidth, 302, BLACK);
-    display.fillRect(2 * rectSpacing + 1 * rectWidth, 450, rectWidth, 302, BLACK);
-    display.fillRect(3 * rectSpacing + 2 * rectWidth, 450, rectWidth, 302, BLACK);
-    display.fillRect(4 * rectSpacing + 3 * rectWidth, 450, rectWidth, 302, BLACK);
-
-    int textMargin = 6;
-
-    display.setFont(&Roboto_Light_48);
+void Weather::drawDaily() {
+    Serial.println(F("weather drawDaily"));
+    display.setFont(&FreeSerifBold12pt7b);
     display.setTextSize(1);
-    display.setTextColor(WHITE, BLACK);
+    display.setTextColor(BLACK, WHITE);
 
-    display.setCursor(1 * rectSpacing + 0 * rectWidth + textMargin, 450 + textMargin + 40);
-    display.println(days[0]);
+    const int x = 8;
 
-    display.setCursor(2 * rectSpacing + 1 * rectWidth + textMargin, 450 + textMargin + 40);
-    display.println(days[1]);
+    display.setCursor(x, 550);
+    display.println(F("Cloud"));
+    display.setCursor(x, 580);
+    display.println(F("Humidity"));
+    display.setCursor(x, 610);
+    display.println(F("UVI"));
+    display.setCursor(x, 640);
+    display.println(F("Wind"));
+    display.setCursor(x, 670);
+    display.println(F("Direction"));
+    display.setCursor(x, 700);
+    display.println(F("Morning"));
+    display.setCursor(x, 730);
+    display.println(F("Day"));
+    display.setCursor(x, 760);
+    display.println(F("Evening"));
+    display.setCursor(x, 790);
+    display.println(F("Night"));
 
-    display.setCursor(3 * rectSpacing + 2 * rectWidth + textMargin, 450 + textMargin + 40);
-    display.println(days[2]);
+    for (int i = 0; i < NUMBER_DAILY; i++) {
+        drawOneDay(weatherReport.daily[i], i);
+    }
+}
 
-    display.setCursor(4 * rectSpacing + 3 * rectWidth + textMargin, 450 + textMargin + 40);
-    display.println(days[3]);
+void Weather::drawOneDay(WeatherData &data, int index) {
+    Serial.print(F("weather drawOneDay "));
+    Serial.println(index, DEC);
+    int x = 166 + index * 132;
 
-    // Drawing temperature values into black rectangles
-    display.setFont(&Roboto_Light_48);
-    display.setTextSize(1);
-    display.setTextColor(WHITE, BLACK);
-
-    display.setCursor(1 * rectSpacing + 0 * rectWidth + textMargin, 450 + textMargin + 120);
-    display.print(temps[0]);
-    display.println(F("C"));
-
-    display.setCursor(2 * rectSpacing + 1 * rectWidth + textMargin, 450 + textMargin + 120);
-    display.print(temps[1]);
-    display.println(F("C"));
-
-    display.setCursor(3 * rectSpacing + 2 * rectWidth + textMargin, 450 + textMargin + 120);
-    display.print(temps[2]);
-    display.println(F("C"));
-
-    display.setCursor(4 * rectSpacing + 3 * rectWidth + textMargin, 450 + textMargin + 120);
-    display.print(temps[3]);
-    display.println(F("C"));
-
-    for (int i = 0; i < 18; ++i)
+    display.setCursor(x, 440);
+    display.println(data.day);
+    // Weather Logo
+    for (int i = 0; i < NUMBER_WEATHER_ABBRS; ++i)
     {
         // If found draw specified icon
-        if (strcmp(abbr1, abbrs[i]) == 0)
-            display.drawBitmap(1 * rectSpacing + 0 * rectWidth + textMargin, 450 + textMargin + 150, s_logos[i], 48, 48,
-                               WHITE, BLACK);
+        if (strcmp(abbrs[i], data.icon) == 0)
+            display.drawBitmap(x, 450, s_logos[i], 48, 48, BLACK);
     }
-
-    for (int i = 0; i < 18; ++i)
-    {
-        // If found draw specified icon
-        if (strcmp(abbr2, abbrs[i]) == 0)
-            display.drawBitmap(2 * rectSpacing + 1 * rectWidth + textMargin, 450 + textMargin + 150, s_logos[i], 48, 48,
-                               WHITE, BLACK);
-    }
-
-    for (int i = 0; i < 18; ++i)
-    {
-        // If found draw specified icon
-        if (strcmp(abbr3, abbrs[i]) == 0)
-            display.drawBitmap(3 * rectSpacing + 2 * rectWidth + textMargin, 450 + textMargin + 150, s_logos[i], 48, 48,
-                               WHITE, BLACK);
-    }
-
-    for (int i = 0; i < 18; ++i)
-    {
-        // If found draw specified icon
-        if (strcmp(abbr4, abbrs[i]) == 0)
-            display.drawBitmap(4 * rectSpacing + 3 * rectWidth + textMargin, 450 + textMargin + 150, s_logos[i], 48, 48,
-                               WHITE, BLACK);
-    }
+    display.setCursor(x, 520);
+    sprintf(weatherFormat, "%d%%", data.rain);
+    display.println(weatherFormat);
+    display.setCursor(x, 550);
+    sprintf(weatherFormat, "%d%%", data.clouds);
+    display.println(weatherFormat);
+    display.setCursor(x, 580);
+    sprintf(weatherFormat, "%d%%", data.humidity);
+    display.println(weatherFormat);
+    display.setCursor(x, 610);
+    sprintf(weatherFormat, "%.2f%%", data.uvi);
+    display.println(weatherFormat);
+    display.setCursor(x, 640);
+    sprintf(weatherFormat, "%.2f", data.wind.speed);
+    display.println(weatherFormat);
+    display.setCursor(x, 670);
+    display.println(wind_direction[((data.wind.deg + 45) / 45) % 8]);
+    display.setCursor(x, 700);
+    sprintf(weatherFormat, "%.2fC", data.temperature.morning);
+    display.println(weatherFormat);
+    display.setCursor(x, 730);
+    sprintf(weatherFormat, "%.2fC", data.temperature.day);
+    display.println(weatherFormat);
+    display.setCursor(x, 760);
+    sprintf(weatherFormat, "%.2fC", data.temperature.evening);
+    display.println(weatherFormat);
+    display.setCursor(x, 790);
+    sprintf(weatherFormat, "%.2fC", data.temperature.night);
+    display.println(weatherFormat);
 }
 
 // Current weather drawing function
-void Weather::drawCurrent()
-{
-    // Drawing current information
+void Weather::drawCurrent() {
+    Serial.println(F("weather drawCurrent"));
+    // Weather Logo
+    for (int i = 0; i < NUMBER_WEATHER_ABBRS; i++)
+    {
+        // If found draw specified icon
+        if (strcmp(abbrs[i], weatherReport.current.icon) == 0) {
+            Serial.println(i, DEC);
+            display.drawBitmap(16, 82, logos[i], 100, 100, BLACK);
+            break;
+        }
+    }
 
-    // Temperature:
-    display.setFont(&Roboto_Light_120);
+    // Temperature and wind
+    display.setFont(&FreeSerifBold18pt7b);
     display.setTextSize(1);
     display.setTextColor(BLACK, WHITE);
+    display.setCursor(120, 128);
+    sprintf(
+        temperature_wind, 
+        "Temp %.2fC Wind %.2f%s",
+        weatherReport.current.temperature.day,
+        weatherReport.current.wind.speed,
+        wind_direction[((weatherReport.current.wind.deg + 45) / 45) % 8]
+    );
+    display.print(temperature_wind);
 
-    display.setCursor(380, 206);
-    display.print(currentTemp);
-
-    int x = display.getCursorX();
-    int y = display.getCursorY();
-
-    display.setFont(&Roboto_Light_48);
-    display.setTextSize(1);
-
-    display.setCursor(x, y);
-    display.println(F("C"));
-
-    // Wind:
-    display.setFont(&Roboto_Light_120);
+    // other information
+    display.setFont(&FreeSerifBold18pt7b);
     display.setTextSize(1);
     display.setTextColor(BLACK, WHITE);
-
-    display.setCursor(720, 206);
-    display.print(currentWind);
-
-    x = display.getCursorX();
-    y = display.getCursorY();
-
-    display.setFont(&Roboto_Light_48);
-    display.setTextSize(1);
-
-    display.setCursor(x, y);
-    display.println(F("m/s"));
-
-    // Labels underneath
-    display.setFont(&Roboto_Light_36);
-    display.setTextSize(1);
-
-    display.setCursor(322, 288);
-    display.println(F("TEMPERATURE"));
-
-    display.setCursor(750, 288);
-    display.println(F("WIND SPEED"));
+    display.setCursor(120, 182);
+    sprintf(
+        humidity_cloud_uvi, 
+        "Humid %d%% Cloud %d%% UVI %.2f%%",
+        weatherReport.current.humidity,
+        weatherReport.current.clouds,
+        weatherReport.current.uvi
+    );
+    display.print(humidity_cloud_uvi);
 }
 
 void Weather::draw()
@@ -237,16 +221,14 @@ void Weather::draw()
 
     // Get all relevant data, see WeatherNetwork.cpp for info
     weatherNetwork.getTime(currentTime);
-    weatherNetwork.getDays(days[0], days[1], days[2], days[3]);
-    weatherNetwork.getData(city, temps[0], temps[1], temps[2], temps[3], currentTemp, currentWind, currentTime,
-                    currentWeather, currentWeatherAbbr, abbr1, abbr2, abbr3, abbr4);
+    weatherNetwork.getData(weatherReport);
 
     // Draw data, see functions below for info
     drawTime();
-    drawWeather();
+    drawQRCode();
     drawCurrent();
-    drawTemps();
-    drawCity();
+    drawHourly();
+    drawDaily();
 
     display.display();
 }

@@ -20,12 +20,50 @@ Distributed as-is; no warranty is given.
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 
+#include <ArduinoJson.h>
+
 #ifndef WEATHER_NETWORK_H
 #define WEATHER_NETWORK_H
 // string length for weather abbreviation
 #define WEATHER_ABBR_SIZE 3
+#define NUMBER_HOURLY 48
+#define NUMBER_DAILY 8
 
 // All functions defined in WeatherNetwork.cpp
+
+struct Temperature
+{
+  float morning;
+  float evening;
+  float day; // current temperature
+  float night;
+};
+
+struct Wind
+{
+  float speed;
+  int deg; // 0-360
+};
+
+struct WeatherData
+{
+  char day[4];
+  char icon[WEATHER_ABBR_SIZE];
+  char rain; // 0-100, rain probability
+  char clouds; // 0-100
+  char humidity; // 0-100
+  float uvi;
+  Wind wind;
+  Temperature temperature;
+  char hour;
+};
+
+struct WeatherReport
+{
+  WeatherData current;
+  WeatherData hourly[NUMBER_HOURLY];
+  WeatherData daily[NUMBER_DAILY];
+};
 
 class WeatherNetwork
 {
@@ -33,17 +71,13 @@ class WeatherNetwork
     // Functions we can access in main file
     void begin();
     void getTime(char *timeStr);
-    void getData(char *city, char *temp1, char *temp2, char *temp3, char *temp4, char *currentTemp, char *currentWind,
-                 char *currentTime, char *currentWeather, char *currentWeatherAbbr, char *abbr1, char *abbr2,
-                 char *abbr3, char *abbr4);
-    void getDays(char *day, char *day1, char *day2, char *day3);
-
-    // Used to store loaction woeid (world id), set in findCity()
-    int location = -1;
+    // weather
+    void getData(WeatherReport &weather);
 
   private:
     // Functions called from within our class
     void setTime();
+    void parseWeather(JsonObject data, WeatherData &weather, bool has_pop, bool is_daily, int timezone_offset);
 };
 
 #endif

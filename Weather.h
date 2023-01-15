@@ -24,16 +24,23 @@ private:
     // Constant to determine when to full update
     const int fullRefresh = 60;
 
-    // Draw future weather
-    void drawWeather();
+    // Draw the time MM-DD ddd hh:mm on top right
+    void drawTime();
+    // Draw QR code
+    void drawQRCode();
     // Draw current weather
     void drawCurrent();
-    // Draw temperature (C) for all days
-    void drawTemps();
-    // Draw city on bottom
-    void drawCity();
-    // Draw the time hh:mm on top right
-    void drawTime();
+    // Draw temperature (C) for 48 hours
+    void drawHourly();
+    // Draw 8 daily weather
+    void drawDaily();
+    // draw for one day
+    void drawOneDay(WeatherData &data, int index);
+    // Human readable city name
+    char city[128];
+    char weatherFormat[7];
+    // detailed weather data
+    WeatherReport weatherReport;
 public:
     // The main draw function
     void draw();
