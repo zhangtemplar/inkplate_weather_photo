@@ -66,10 +66,10 @@ void WeatherNetwork::begin()
 }
 
 // Gets time from ntp server
-void WeatherNetwork::getTime(char *timeStr)
+void WeatherNetwork::getTime(char *timeStr, int timezone_offset)
 {
     // Get seconds since 1.1.1970.
-    time_t nowSecs = time(nullptr);
+    time_t nowSecs = time(nullptr) + timezone_offset;
 
     // Used to store time
     struct tm timeinfo;
@@ -145,7 +145,7 @@ void WeatherNetwork::parseWeather(JsonObject data, WeatherData &weather, bool ha
     }
 }
 
-void WeatherNetwork::getData(WeatherReport &weather)
+void WeatherNetwork::getData(WeatherReport &weather, char *timeStr)
 {
     Serial.println(F("getData"));
     // If not connected to wifi reconnect wifi
@@ -215,6 +215,8 @@ void WeatherNetwork::getData(WeatherReport &weather)
             else
             {
                 const int timezone = doc[F("timezone_offset")].as<int>();
+                Serial.println(F("parseWeather/getTime"));
+                getTime(timeStr, timezone);
                 Serial.println(F("parseWeather current"));
                 parseWeather(doc[F("current")], weather.current, false, false, timezone);
                 Serial.println(F("parseWeather hourly"));

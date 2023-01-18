@@ -220,8 +220,7 @@ void Weather::draw()
     weatherNetwork.begin();
 
     // Get all relevant data, see WeatherNetwork.cpp for info
-    weatherNetwork.getTime(currentTime);
-    weatherNetwork.getData(weatherReport);
+    weatherNetwork.getData(weatherReport, currentTime);
 
     // Draw data, see functions below for info
     drawTime();

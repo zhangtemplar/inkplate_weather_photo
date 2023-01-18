@@ -31,7 +31,7 @@
 
 // Delay between API calls
 // wait for 4 hours before next photo update
-#define PHOTO_DELAY_US 24ll * 60 * 60 * 1000 * 1000
+#define PHOTO_DELAY_US 4ll * 60 * 60 * 1000 * 1000
 // wait for 1 hour before next photo update
 //#define CALENDAR_DELAY_US 60 * 60 * 1000 * 1000
 // for weather, delay 1 minute before each call
@@ -155,9 +155,10 @@ void refreshDisplay(bool forceClear)
 bool checkBattery() {
   float voltage = display.readBattery();
   if (voltage < MIN_VOLTAGE) {
-    display.println("Battery low");
+    display.setTextSize(8);
+    display.println("Battery low ");
     display.print(voltage, 2);
-    display.println("V");
+    display.println(" V");
     display.display();
     return false;
   }

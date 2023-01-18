@@ -70,13 +70,13 @@ class WeatherNetwork
   public:
     // Functions we can access in main file
     void begin();
-    void getTime(char *timeStr);
     // weather
-    void getData(WeatherReport &weather);
+    void getData(WeatherReport &weather, char *timeStr);
 
   private:
     // Functions called from within our class
     void setTime();
+    void getTime(char *timeStr, int timezone_offset);
     void parseWeather(JsonObject data, WeatherData &weather, bool has_pop, bool is_daily, int timezone_offset);
 };
 
