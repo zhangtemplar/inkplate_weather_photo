@@ -1,0 +1,22 @@
+/*
+ * Create your own settings.h based on this template.
+ * Fill in your WiFi credentials, API keys, and location.
+ * settings.h is gitignored to protect your secrets.
+ */
+#ifndef SETTINGS_H
+#define SETTINGS_H
+
+// WiFi credentials
+char SECRET_SSID[128] = "your_wifi_ssid";
+char SECRET_PASS[128] = "your_wifi_password";
+
+// Timezone offset in seconds (e.g., -18000 for US Eastern, 28800 for China)
+int SECRET_TIMEZONE = -18000;
+
+// City coordinates for OpenWeatherMap (format: "lat=xx.xx&lon=yy.yy")
+char SECRET_CITY[128] = "lat=40.71&lon=-74.01";
+
+// OpenWeatherMap API key (get from https://openweathermap.org/api)
+char WEATHER_API_KEY[128] = "your_openweather_api_key";
+
+#endif

@@ -25,8 +25,8 @@ void Weather::drawHourly()
     // Draw a line plot for hourly temperature
     // x=8, y=228, w=18*48, h=200
     int left = 8;
-    const int top = 228;
-    const int bottom = 433;
+    const int top = 244;
+    const int bottom = 444;
     const int space = 12;
     // find min and max temerature
     float minTemperature = 200, maxTemperature = -100;
@@ -177,7 +177,7 @@ void Weather::drawCurrent() {
         // If found draw specified icon
         if (strcmp(abbrs[i], weatherReport.current.icon) == 0) {
             Serial.println(i, DEC);
-            display.drawBitmap(16, 82, logos[i], 100, 100, BLACK);
+            display.drawBitmap(16, 82, logos[i], 152, 152, BLACK);
             break;
         }
     }
@@ -186,7 +186,7 @@ void Weather::drawCurrent() {
     display.setFont(&FreeSerifBold18pt7b);
     display.setTextSize(1);
     display.setTextColor(BLACK, WHITE);
-    display.setCursor(120, 128);
+    display.setCursor(176, 128);
     sprintf(
         temperature_wind, 
         "Temp %.2fC Wind %.2f%s",
@@ -200,7 +200,7 @@ void Weather::drawCurrent() {
     display.setFont(&FreeSerifBold18pt7b);
     display.setTextSize(1);
     display.setTextColor(BLACK, WHITE);
-    display.setCursor(120, 182);
+    display.setCursor(176, 182);
     sprintf(
         humidity_cloud_uvi, 
         "Humid %d%% Cloud %d%% UVI %.2f%%",

@@ -1,8 +1,8 @@
 /*
  * Weather + photo frame for InkPlate 10 and 6.
- * 
+ *
  * It is based on https://github.com/e-radionicacom/Inkplate-Arduino-library/tree/master/examples/Inkplate10/Projects
- * 
+ *
  * Author: zhangtemplar@gmail.com
  */
 // Next 3 lines are a precaution, you can ignore those, and the example would also work without them
@@ -26,42 +26,52 @@
 // for local photo
 #include "LocalPhoto.h"
 
-// Flickr web photo
-#include "Flickr.h"
+// Picsum web photo
+#include "PicsumPhoto.h"
+
+// Calendar
+#include "Calendar.h"
+
+// Captive portal for WiFi setup and image upload
+#include "CaptivePortal.h"
 
 // Delay between API calls
 // wait for 4 hours before next photo update
 #define PHOTO_DELAY_US 4ll * 60 * 60 * 1000 * 1000
-// wait for 1 hour before next photo update
-//#define CALENDAR_DELAY_US 60 * 60 * 1000 * 1000
-// for weather, delay 1 minute before each call
-//#define WEATHER_DELAY_US 60 * 1000 * 1000
 
 // Inkplate object
 // 3 Bit will fail weather display
 Inkplate display(INKPLATE_1BIT);
 #define MIN_VOLTAGE 3.4
+
 /*
  * which page to show
  * 0: weather
- * 1: photo
+ * 1: photo (Picsum or local)
  * 2: calendar
- * others are not supported
- * 
- * TODO: move to a dedicated class
+ * 3: setup (captive portal)
  */
 #define PAGE_WEATHER 0
 #define PAGE_PHOTO 1
 #define PAGE_CALENDAR 2
+#define PAGE_SETUP 3
 RTC_DATA_ATTR char page = PAGE_WEATHER;
 RTC_DATA_ATTR char previousPage = -1;
+// Toggles between web (Picsum) and local SD card photo on each pad 2 press
+RTC_DATA_ATTR bool useWebPhoto = true;
+
+// Calendarific API key (for Chinese holidays)
+char CALENDARIFIC_KEY[128] = "";
 
 Weather weather;
 LocalPhoto localPhoto;
-// Flickr flickr;
+PicsumPhoto picsumPhoto;
+Calendar calendar;
+CaptivePortal captivePortal;
+
 /*
  * Refresh display when needed.
- * 
+ *
  * The display will be cleared if any of the conditions met:
  * - page is switched
  * - forceClear is requested
@@ -69,64 +79,42 @@ LocalPhoto localPhoto;
 void refreshDisplay(bool forceClear);
 // Read the latest touch pad event (via interrupt register)
 void readTouchPad();
-
-void imageUrl(char *a) {
-    String url;
-    HTTPClient http;
-    if (http.begin("https://source.unsplash.com/random/1200x800") && http.GET() > 0)
-    {
-        url = http.getString();
-
-        int urlStart = url.indexOf("href=\"") + 6;
-        int urlEnd = url.indexOf("\">", urlStart);
-
-        url = url.substring(urlStart, urlEnd);
-        url = url.substring(0, url.indexOf("?")) + "?crop=entropy&fit=crop&fm=png&h=800&w=1200";
-
-        Serial.println(url);
-        strcpy(a, url.c_str());
-    }
-    else
-    {
-        display.println("HTTP error");
-        display.display();
-    }
-    http.end();
-}
-
-void webPhoto() {
-    display.setDisplayMode(INKPLATE_3BIT);
-  // Join wifi
-    display.joinAP(SECRET_SSID, SECRET_PASS);
-
-    char url[256];
-    imageUrl(url);
-    Serial.print(F("to display image from "));
-    Serial.println(url);
-
-    Serial.println(display.drawImage(url, display.PNG, 0, 0, true));
-    display.display();
-}
+// Start captive portal (called from WeatherNetwork on WiFi failure)
+void startCaptivePortal();
 
 void readTouchPad() {
     // According to the schema, touch pad are connected to port B 2, 3 and 4 accordingly
     // and from https://github.com/e-radionicacom/Inkplate-Arduino-library/blob/451f49eb752d37d49c9beebefa1eb2817d541c86/src/include/Mcp.cpp
     // we know this is matched to bit 10, 11 and 12 accordingly
     uint16_t key = display.getINTstateInternal(MCP23017_INT_ADDR, display.mcpRegsInt);
-    if (key & (1 << 10))
-    { // Check if first pad has been touched. If it is, decrement the number and refresh the screen.
+
+    bool pad1 = key & (1 << 10);
+    bool pad2 = key & (1 << 11);
+    bool pad3 = key & (1 << 12);
+
+    // Touchpad 1+3 combo triggers setup portal
+    if (pad1 && pad3) {
+        page = PAGE_SETUP;
+        Serial.println(F("key combo for setup"));
+        return;
+    }
+
+    if (pad1)
+    { // First pad: weather
         page = PAGE_WEATHER;
         Serial.println(F("key pressed for weather"));
     }
 
-    if (key & (1 << 11))
-    { // If you touched second touchpad, set number to zero and refresh screen by calling our displayNumber() function
+    if (pad2)
+    { // Second pad: photo (toggles between web and local)
         page = PAGE_PHOTO;
-        Serial.println(F("key pressed for photo"));
+        useWebPhoto = !useWebPhoto;
+        Serial.print(F("key pressed for photo, web="));
+        Serial.println(useWebPhoto);
     }
 
-    if (key & (1 << 12))
-    { // If you touched third touchpad, incerement the number and refresh the screen.
+    if (pad3)
+    { // Third pad: calendar
         page = PAGE_CALENDAR;
         Serial.println(F("key pressed for calendar"));
     }
@@ -148,7 +136,7 @@ void refreshDisplay(bool forceClear)
 
 /**
  * @brief Check battery, if low show a warning
- * 
+ *
  * @return true if battery is ok
  * @return false if battery is low
  */
@@ -169,7 +157,7 @@ bool checkBattery() {
 
 /**
  * @brief Read settings from a json file in local microsd card named as settings.json
- * 
+ *
  * @return true if setting is read succesfully
  * @return false if setting failed to read, then hard coded setting will be used instead.
  */
@@ -189,6 +177,7 @@ bool readSettings() {
   Serial.println(F("parse settings.json"));
   StaticJsonDocument<1024> doc;
   DeserializationError error = deserializeJson(doc, file2);
+  file2.close();
   if (error) {
     Serial.println(F("failed to read setttings from settings.json will use default value"));
     return false;
@@ -197,8 +186,14 @@ bool readSettings() {
   strlcpy(SECRET_CITY, doc["city"] | SECRET_CITY, sizeof(SECRET_CITY));
   strlcpy(SECRET_SSID, doc["ssid"] | SECRET_SSID, sizeof(SECRET_SSID));
   strlcpy(SECRET_PASS, doc["wifi_password"] | SECRET_PASS, sizeof(SECRET_PASS));
-  strlcpy(FLICKR_KEY, doc["flicker_key"] | FLICKR_KEY, sizeof(FLICKR_KEY));
+  strlcpy(WEATHER_API_KEY, doc["weather_api_key"] | WEATHER_API_KEY, sizeof(WEATHER_API_KEY));
+  strlcpy(CALENDARIFIC_KEY, doc["calendarific_key"] | CALENDARIFIC_KEY, sizeof(CALENDARIFIC_KEY));
   return true;
+}
+
+void startCaptivePortal() {
+    page = PAGE_SETUP;
+    captivePortal.start();
 }
 
 // Main function
@@ -229,8 +224,17 @@ void setup()
         weather.draw();
         break;
       case PAGE_PHOTO:
-        // flickr.draw();
-        webPhoto();
+        if (useWebPhoto) {
+            picsumPhoto.draw();
+        } else {
+            localPhoto.draw();
+        }
+        break;
+      case PAGE_CALENDAR:
+        calendar.draw();
+        break;
+      case PAGE_SETUP:
+        captivePortal.start();
         break;
       default:
         localPhoto.draw();

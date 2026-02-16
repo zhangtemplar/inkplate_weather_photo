@@ -20,18 +20,19 @@ Distributed as-is; no warranty is given.
 
 #include <HTTPClient.h>
 #include <WiFi.h>
+#include "WiFiUtil.h"
 
 // To get timeZone from main file
 extern int SECRET_TIMEZONE;
 
 // from settings.h
 extern char SECRET_CITY[128];
-// wifi ssid and password
-extern char SECRET_SSID[128];
-extern char SECRET_PASS[128];
 
 // open weather api key
 extern char WEATHER_API_KEY[128];
+
+// Forward declaration for captive portal trigger
+extern void startCaptivePortal();
 
 // Declared week days
 const char weekDays[8][8] = {
@@ -40,27 +41,11 @@ const char weekDays[8][8] = {
 
 void WeatherNetwork::begin()
 {
-    // Initiating wifi, like in BasicHttpClient example
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(SECRET_SSID, SECRET_PASS);
-
-    int cnt = 0;
-    Serial.print(F("Waiting for WiFi to connect..."));
-    while ((WiFi.status() != WL_CONNECTED))
-    {
-        Serial.print(F("."));
-        delay(1000);
-        ++cnt;
-
-        if (cnt == 20)
-        {
-            Serial.println(F("Can't connect to WIFI, restarting"));
-            delay(100);
-            ESP.restart();
-        }
+    if (!connectWiFi(20)) {
+        Serial.println(F("WiFi failed, starting captive portal"));
+        startCaptivePortal();
+        return;
     }
-    Serial.println(F(" connected"));
-
     // Find internet time
     setTime();
 }
@@ -151,25 +136,9 @@ void WeatherNetwork::getData(WeatherReport &weather, char *timeStr)
     // If not connected to wifi reconnect wifi
     if (WiFi.status() != WL_CONNECTED)
     {
-        WiFi.reconnect();
-
-        delay(5000);
-
-        int cnt = 0;
-        Serial.println(F("Waiting for WiFi to reconnect..."));
-        while ((WiFi.status() != WL_CONNECTED))
-        {
-            // Prints a dot every second that wifi isn't connected
-            Serial.print(F("."));
-            delay(1000);
-            ++cnt;
-
-            if (cnt == 7)
-            {
-                Serial.println(F("Can't connect to WIFI, restart initiated."));
-                delay(100);
-                ESP.restart();
-            }
+        if (!connectWiFi(20)) {
+            Serial.println(F("Can't reconnect to WiFi"));
+            return;
         }
     }
 
@@ -199,12 +168,56 @@ void WeatherNetwork::getData(WeatherReport &weather, char *timeStr)
 
         if (len > 0)
         {
+            // Build a filter to parse only the fields we actually use.
+            // This dramatically reduces memory: the full response is ~22KB
+            // but the filtered parse only needs ~8KB of document memory.
+            StaticJsonDocument<512> filter;
+            filter["timezone_offset"] = true;
 
-            // prefer dynamic json object given https://arduinojson.org/v6/api/jsondocument/
-            // the response is around 22k bytes
-            DynamicJsonDocument doc(64000);
-            // Try parsing JSON object
-            DeserializationError error = deserializeJson(doc, http.getStream());
+            // Current weather fields
+            JsonObject curF = filter["current"].createNestedObject();
+            curF["dt"] = true;
+            curF["weather"][0]["icon"] = true;
+            curF["clouds"] = true;
+            curF["humidity"] = true;
+            curF["uvi"] = true;
+            curF["wind_speed"] = true;
+            curF["wind_deg"] = true;
+            curF["temp"] = true;
+
+            // Hourly forecast fields
+            JsonObject hourF = filter["hourly"][0].createNestedObject();
+            hourF["dt"] = true;
+            hourF["weather"][0]["icon"] = true;
+            hourF["clouds"] = true;
+            hourF["humidity"] = true;
+            hourF["uvi"] = true;
+            hourF["pop"] = true;
+            hourF["wind_speed"] = true;
+            hourF["wind_deg"] = true;
+            hourF["temp"] = true;
+
+            // Daily forecast fields
+            JsonObject dayF = filter["daily"][0].createNestedObject();
+            dayF["dt"] = true;
+            dayF["weather"][0]["icon"] = true;
+            dayF["clouds"] = true;
+            dayF["humidity"] = true;
+            dayF["uvi"] = true;
+            dayF["pop"] = true;
+            dayF["wind_speed"] = true;
+            dayF["wind_deg"] = true;
+            dayF["temp"]["morn"] = true;
+            dayF["temp"]["day"] = true;
+            dayF["temp"]["eve"] = true;
+            dayF["temp"]["night"] = true;
+
+            // 16KB is sufficient for the filtered response (down from 64KB)
+            DynamicJsonDocument doc(16384);
+            DeserializationError error = deserializeJson(
+                doc, http.getStream(),
+                DeserializationOption::Filter(filter)
+            );
 
             // If an error happens print it to Serial monitor
             if (error)
