@@ -3,6 +3,7 @@
 #include "WiFiUtil.h"
 #include "SdFat.h"
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <WiFi.h>
 #include <time.h>
 
@@ -37,9 +38,11 @@ void Calendar::syncTime() {
 
 void Calendar::fetchUSHolidays(int year) {
     HTTPClient http;
+    WiFiClientSecure client;
+    client.setInsecure();
     char url[128];
     sprintf(url, "https://date.nager.at/api/v3/publicholidays/%d/US", year);
-    http.begin(url);
+    http.begin(client, url);
     int httpCode = http.GET();
     if (httpCode == 200) {
         DynamicJsonDocument doc(8192);
@@ -74,9 +77,11 @@ void Calendar::fetchChineseHolidays(int year) {
         return;
     }
     HTTPClient http;
+    WiFiClientSecure client;
+    client.setInsecure();
     char url[256];
     sprintf(url, "https://calendarific.com/api/v2/holidays?api_key=%s&country=CN&year=%d", CALENDARIFIC_KEY, year);
-    http.begin(url);
+    http.begin(client, url);
     int httpCode = http.GET();
     if (httpCode == 200) {
         DynamicJsonDocument doc(16384);

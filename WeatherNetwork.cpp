@@ -149,16 +149,15 @@ void WeatherNetwork::getData(WeatherReport &weather, char *timeStr)
 
     // Http object used to make get request
     HTTPClient http;
-
-    http.getStream().setNoDelay(true);
-    http.getStream().setTimeout(1);
+    WiFiClientSecure client;
+    client.setInsecure(); // Skip SSL certificate verification
 
     // Add woeid to api call
     char url[256];
     sprintf(url, "https://api.openweathermap.org/data/3.0/onecall?%s&appid=%s&exclude=minutely&units=metric", SECRET_CITY, WEATHER_API_KEY);
 
     // Initiate http
-    http.begin(url);
+    http.begin(client, url);
 
     // Actually do request
     int httpCode = http.GET();
@@ -171,46 +170,43 @@ void WeatherNetwork::getData(WeatherReport &weather, char *timeStr)
             // Build a filter to parse only the fields we actually use.
             // This dramatically reduces memory: the full response is ~22KB
             // but the filtered parse only needs ~8KB of document memory.
-            StaticJsonDocument<512> filter;
+            StaticJsonDocument<1024> filter;
             filter["timezone_offset"] = true;
 
-            // Current weather fields
-            JsonObject curF = filter["current"].createNestedObject();
-            curF["dt"] = true;
-            curF["weather"][0]["icon"] = true;
-            curF["clouds"] = true;
-            curF["humidity"] = true;
-            curF["uvi"] = true;
-            curF["wind_speed"] = true;
-            curF["wind_deg"] = true;
-            curF["temp"] = true;
+            // Current weather fields (current is an object in the response)
+            filter["current"]["dt"] = true;
+            filter["current"]["weather"][0]["icon"] = true;
+            filter["current"]["clouds"] = true;
+            filter["current"]["humidity"] = true;
+            filter["current"]["uvi"] = true;
+            filter["current"]["wind_speed"] = true;
+            filter["current"]["wind_deg"] = true;
+            filter["current"]["temp"] = true;
 
-            // Hourly forecast fields
-            JsonObject hourF = filter["hourly"][0].createNestedObject();
-            hourF["dt"] = true;
-            hourF["weather"][0]["icon"] = true;
-            hourF["clouds"] = true;
-            hourF["humidity"] = true;
-            hourF["uvi"] = true;
-            hourF["pop"] = true;
-            hourF["wind_speed"] = true;
-            hourF["wind_deg"] = true;
-            hourF["temp"] = true;
+            // Hourly forecast fields (hourly is an array in the response)
+            filter["hourly"][0]["dt"] = true;
+            filter["hourly"][0]["weather"][0]["icon"] = true;
+            filter["hourly"][0]["clouds"] = true;
+            filter["hourly"][0]["humidity"] = true;
+            filter["hourly"][0]["uvi"] = true;
+            filter["hourly"][0]["pop"] = true;
+            filter["hourly"][0]["wind_speed"] = true;
+            filter["hourly"][0]["wind_deg"] = true;
+            filter["hourly"][0]["temp"] = true;
 
-            // Daily forecast fields
-            JsonObject dayF = filter["daily"][0].createNestedObject();
-            dayF["dt"] = true;
-            dayF["weather"][0]["icon"] = true;
-            dayF["clouds"] = true;
-            dayF["humidity"] = true;
-            dayF["uvi"] = true;
-            dayF["pop"] = true;
-            dayF["wind_speed"] = true;
-            dayF["wind_deg"] = true;
-            dayF["temp"]["morn"] = true;
-            dayF["temp"]["day"] = true;
-            dayF["temp"]["eve"] = true;
-            dayF["temp"]["night"] = true;
+            // Daily forecast fields (daily is an array in the response)
+            filter["daily"][0]["dt"] = true;
+            filter["daily"][0]["weather"][0]["icon"] = true;
+            filter["daily"][0]["clouds"] = true;
+            filter["daily"][0]["humidity"] = true;
+            filter["daily"][0]["uvi"] = true;
+            filter["daily"][0]["pop"] = true;
+            filter["daily"][0]["wind_speed"] = true;
+            filter["daily"][0]["wind_deg"] = true;
+            filter["daily"][0]["temp"]["morn"] = true;
+            filter["daily"][0]["temp"]["day"] = true;
+            filter["daily"][0]["temp"]["eve"] = true;
+            filter["daily"][0]["temp"]["night"] = true;
 
             // 16KB is sufficient for the filtered response (down from 64KB)
             DynamicJsonDocument doc(16384);
@@ -247,6 +243,11 @@ void WeatherNetwork::getData(WeatherReport &weather, char *timeStr)
             }
             doc.clear();
         }
+    }
+    else
+    {
+        Serial.print(F("Weather API HTTP error: "));
+        Serial.println(httpCode);
     }
 
     // Clear document and end http
