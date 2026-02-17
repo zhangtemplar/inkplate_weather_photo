@@ -163,10 +163,6 @@ void WeatherNetwork::getData(WeatherReport &weather, char *timeStr)
     int httpCode = http.GET();
     if (httpCode == 200)
     {
-        int32_t len = http.getSize();
-
-        if (len > 0)
-        {
             // Build a filter to parse only the fields we actually use.
             // This dramatically reduces memory: the full response is ~22KB
             // but the filtered parse only needs ~8KB of document memory.
@@ -209,9 +205,10 @@ void WeatherNetwork::getData(WeatherReport &weather, char *timeStr)
             filter["daily"][0]["temp"]["night"] = true;
 
             // 16KB is sufficient for the filtered response (down from 64KB)
+            String response = http.getString();
             DynamicJsonDocument doc(16384);
             DeserializationError error = deserializeJson(
-                doc, http.getStream(),
+                doc, response,
                 DeserializationOption::Filter(filter)
             );
 
@@ -242,7 +239,6 @@ void WeatherNetwork::getData(WeatherReport &weather, char *timeStr)
                 Serial.println(F("parseWeather done"));
             }
             doc.clear();
-        }
     }
     else
     {

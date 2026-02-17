@@ -25,7 +25,7 @@ void PicsumPhoto::draw() {
 
     HTTPClient http;
     http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-    http.begin(client, "https://picsum.photos/1200/825");
+    http.begin(client, "https://picsum.photos/1200/825?grayscale");
 
     int httpCode = http.GET();
     if (httpCode != 200) {

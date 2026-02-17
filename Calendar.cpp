@@ -45,8 +45,9 @@ void Calendar::fetchUSHolidays(int year) {
     http.begin(client, url);
     int httpCode = http.GET();
     if (httpCode == 200) {
+        String response = http.getString();
         DynamicJsonDocument doc(8192);
-        DeserializationError error = deserializeJson(doc, http.getStream());
+        DeserializationError error = deserializeJson(doc, response);
         if (!error) {
             JsonArray arr = doc.as<JsonArray>();
             for (JsonObject obj : arr) {
@@ -84,8 +85,9 @@ void Calendar::fetchChineseHolidays(int year) {
     http.begin(client, url);
     int httpCode = http.GET();
     if (httpCode == 200) {
+        String response = http.getString();
         DynamicJsonDocument doc(16384);
-        DeserializationError error = deserializeJson(doc, http.getStream());
+        DeserializationError error = deserializeJson(doc, response);
         if (!error) {
             JsonArray arr = doc["response"]["holidays"];
             for (JsonObject obj : arr) {
@@ -235,8 +237,8 @@ void Calendar::drawGrid(int year, int month, int numDays, int startDow) {
             display.fillCircle(cx + cellW - 16, cy + 16, 6, BLACK);
             // Add to event list
             if (eventsShown < 8) {
-                display.setFont(&FreeSans9pt7b);
-                display.setCursor(gridLeft + (eventsShown % 2) * 560, eventListY + (eventsShown / 2) * 22);
+                display.setFont(&FreeSerifBold12pt7b);
+                display.setCursor(gridLeft + (eventsShown % 2) * 560, eventListY + (eventsShown / 2) * 28);
                 char eventLine[60];
                 sprintf(eventLine, "%d/%d: %s", month, day, nameBuf);
                 display.print(eventLine);
