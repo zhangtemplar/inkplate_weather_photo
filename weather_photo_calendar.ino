@@ -86,7 +86,7 @@ void readTouchPad() {
     // According to the schema, touch pad are connected to port B 2, 3 and 4 accordingly
     // and from https://github.com/e-radionicacom/Inkplate-Arduino-library/blob/451f49eb752d37d49c9beebefa1eb2817d541c86/src/include/Mcp.cpp
     // we know this is matched to bit 10, 11 and 12 accordingly
-    uint16_t key = display.getINTstateInternal(MCP23017_INT_ADDR, display.mcpRegsInt);
+    uint16_t key = display.getINTstateInternal(IO_INT_ADDR, display.ioRegsInt);
 
     bool pad1 = key & (1 << 10);
     bool pad2 = key & (1 << 11);
@@ -212,9 +212,9 @@ void setup()
 
     // Setup mcp interrupts
     for (int touchPadPin = 10; touchPadPin <=12; touchPadPin++) {
-      display.pinModeInternal(MCP23017_INT_ADDR, display.mcpRegsInt, touchPadPin, INPUT);
-      display.setIntOutputInternal(MCP23017_INT_ADDR, display.mcpRegsInt, 1, false, false, HIGH);
-      display.setIntPinInternal(MCP23017_INT_ADDR, display.mcpRegsInt, touchPadPin, RISING);
+      display.pinModeInternal(IO_INT_ADDR, display.ioRegsInt, touchPadPin, INPUT);
+      display.setIntOutputInternal(IO_INT_ADDR, display.ioRegsInt, 1, false, false, HIGH);
+      display.setIntPinInternal(IO_INT_ADDR, display.ioRegsInt, touchPadPin, RISING);
     }
     readTouchPad();
 

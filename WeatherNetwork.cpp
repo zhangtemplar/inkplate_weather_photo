@@ -102,12 +102,12 @@ void WeatherNetwork::parseWeather(JsonObject data, WeatherData &weather, bool ha
 
     // main
     // Serial.print(F("parseWeather/main: "));
-    strncpy(weather.icon, data[F("weather")][0][F("icon")].as<char *>(), 2);
+    strncpy(weather.icon, data[F("weather")][0][F("icon")].as<const char *>(), 2);
     // Serial.println(weather.icon);
     // Serial.println(F("parseWeather/clouds"));
-    weather.clouds = data[F("clouds")].as<char>();
+    weather.clouds = data[F("clouds")].as<int>();
     // Serial.println(F("parseWeather/humidity"));
-    weather.humidity = data[F("humidity")].as<char>();
+    weather.humidity = data[F("humidity")].as<int>();
     // Serial.println(F("parseWeather/uvi"));
     weather.uvi = data[F("uvi")].as<float>();
     if (has_pop) {

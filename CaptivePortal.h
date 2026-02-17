@@ -3,6 +3,7 @@
 
 #include <WebServer.h>
 #include <DNSServer.h>
+#include "SdFat.h"
 
 class CaptivePortal {
 public:
