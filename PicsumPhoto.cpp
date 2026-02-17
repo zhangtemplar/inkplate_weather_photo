@@ -79,7 +79,7 @@ void PicsumPhoto::draw() {
     Serial.print(totalRead);
     Serial.println(F(" bytes"));
 
-    if (totalRead == 0 || !display.drawImage("picsum_temp.jpg", 0, 0, true, false)) {
+    if (totalRead == 0 || !display.drawImage("picsum_temp.jpg", display.JPG, 0, 0, true, false)) {
         Serial.println(F("Failed to draw Picsum image, falling back to local photo"));
         LocalPhoto localPhoto;
         localPhoto.draw();

@@ -60,9 +60,6 @@ RTC_DATA_ATTR char previousPage = -1;
 // Toggles between web (Picsum) and local SD card photo on each pad 2 press
 RTC_DATA_ATTR bool useWebPhoto = true;
 
-// Calendarific API key (for Chinese holidays)
-char CALENDARIFIC_KEY[128] = "";
-
 Weather weather;
 LocalPhoto localPhoto;
 PicsumPhoto picsumPhoto;
