@@ -11,6 +11,9 @@
 #include "Fonts/FreeSerifBold12pt7b.h"
 #include "Fonts/FreeSans9pt7b.h"
 
+#include "CJKRenderer.h"
+#include "SolarTerms.h"
+
 extern Inkplate display;
 extern int SECRET_TIMEZONE;
 extern char CALENDARIFIC_KEY[128];
@@ -19,6 +22,22 @@ extern char CALENDARIFIC_KEY[128];
 static const char *monthNames[] = {
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
+};
+
+// Chinese month names (UTF-8)
+static const char *chineseMonthNames[] = {
+    "\xe4\xb8\x80\xe6\x9c\x88",   // 一月
+    "\xe4\xba\x8c\xe6\x9c\x88",   // 二月
+    "\xe4\xb8\x89\xe6\x9c\x88",   // 三月
+    "\xe5\x9b\x9b\xe6\x9c\x88",   // 四月
+    "\xe4\xba\x94\xe6\x9c\x88",   // 五月
+    "\xe5\x85\xad\xe6\x9c\x88",   // 六月
+    "\xe4\xb8\x83\xe6\x9c\x88",   // 七月
+    "\xe5\x85\xab\xe6\x9c\x88",   // 八月
+    "\xe4\xb9\x9d\xe6\x9c\x88",   // 九月
+    "\xe5\x8d\x81\xe6\x9c\x88",   // 十月
+    "\xe5\x8d\x81\xe4\xb8\x80\xe6\x9c\x88", // 十一月
+    "\xe5\x8d\x81\xe4\xba\x8c\xe6\x9c\x88"  // 十二月
 };
 
 void Calendar::syncTime() {
@@ -81,7 +100,7 @@ void Calendar::fetchChineseHolidays(int year) {
     WiFiClientSecure client;
     client.setInsecure();
     char url[256];
-    sprintf(url, "https://calendarific.com/api/v2/holidays?api_key=%s&country=CN&year=%d", CALENDARIFIC_KEY, year);
+    sprintf(url, "https://calendarific.com/api/v2/holidays?api_key=%s&country=CN&year=%d&language=zh", CALENDARIFIC_KEY, year);
     http.begin(client, url);
     int httpCode = http.GET();
     if (httpCode == 200) {
@@ -138,6 +157,21 @@ void Calendar::loadCustomDates() {
     }
     Serial.print(F("Loaded custom dates: "));
     Serial.println(customDateCount);
+}
+
+void Calendar::loadSolarTerms(int year, int month) {
+    SolarTermEntry terms[SOLAR_TERM_COUNT];
+    int count = getSolarTerms(year, terms);
+    for (int i = 0; i < count; i++) {
+        if (terms[i].month == month && holidayCount < MAX_HOLIDAYS) {
+            holidays[holidayCount].month = terms[i].month;
+            holidays[holidayCount].day = terms[i].day;
+            strlcpy(holidays[holidayCount].name,
+                    getSolarTermName(terms[i].termIndex),
+                    sizeof(holidays[0].name));
+            holidayCount++;
+        }
+    }
 }
 
 bool Calendar::isHoliday(int month, int day, char *nameBuf, int bufSize) {
@@ -232,16 +266,33 @@ void Calendar::drawGrid(int year, int month, int numDays, int startDow) {
         display.setCursor(cx + 8, cy + 32);
         display.print(day);
 
+        // Solar term annotation inside cell
+        int termIdx = findSolarTerm(year, month, day);
+        if (termIdx >= 0) {
+            const char *termName = getSolarTermName(termIdx);
+            display.setFont(&FreeSans9pt7b);
+            CJKRenderer::drawString(display, cx + 8, cy + 70, termName, BLACK);
+            display.setFont(&FreeSerifBold18pt7b);
+        }
+
         // Holiday marker
         if (isHoliday(month, day, nameBuf, sizeof(nameBuf))) {
             display.fillCircle(cx + cellW - 16, cy + 16, 6, BLACK);
-            // Add to event list
+            // Add to event list below the grid
             if (eventsShown < 8) {
                 display.setFont(&FreeSerifBold12pt7b);
-                display.setCursor(gridLeft + (eventsShown % 2) * 560, eventListY + (eventsShown / 2) * 28);
-                char eventLine[60];
-                sprintf(eventLine, "%d/%d: %s", month, day, nameBuf);
+                int evX = gridLeft + (eventsShown % 2) * 560;
+                int evY = eventListY + (eventsShown / 2) * 28;
+                display.setCursor(evX, evY);
+                char eventLine[16];
+                sprintf(eventLine, "%d/%d: ", month, day);
                 display.print(eventLine);
+
+                // Draw holiday name (may be Chinese from Calendarific API)
+                int16_t curX = display.getCursorX();
+                int16_t curY = display.getCursorY();
+                CJKRenderer::drawString(display, curX, curY, nameBuf, BLACK);
+
                 display.setFont(&FreeSerifBold18pt7b);
                 eventsShown++;
             }
@@ -279,12 +330,13 @@ void Calendar::draw() {
     Serial.print(F(" "));
     Serial.println(year);
 
-    // Fetch holidays
+    // Fetch holidays and solar terms
     fetchUSHolidays(year);
     fetchChineseHolidays(year);
     loadCustomDates();
+    loadSolarTerms(year, month);
 
-    // Title
+    // English title
     display.setFont(&FreeSerifBold18pt7b);
     display.setTextSize(2);
     display.setTextColor(BLACK, WHITE);
@@ -294,8 +346,20 @@ void Calendar::draw() {
     int titleLen = strlen(title);
     int titleX = (1200 - titleLen * 28) / 2;
     if (titleX < 0) titleX = 40;
-    display.setCursor(titleX, 80);
+    display.setCursor(titleX, 60);
     display.print(title);
+
+    // Chinese date subtitle (e.g. "2026年二月")
+    display.setFont(&FreeSerifBold12pt7b);
+    display.setTextSize(1);
+    char cnTitle[32];
+    sprintf(cnTitle, "%d\xe5\xb9\xb4", year);  // "2026年"
+    int cnWidth = CJKRenderer::measureString(display, cnTitle);
+    cnWidth += CJKRenderer::measureString(display, chineseMonthNames[month - 1]);
+    int cnTitleX = (1200 - cnWidth) / 2;
+    if (cnTitleX < 0) cnTitleX = 40;
+    int endX = CJKRenderer::drawString(display, cnTitleX, 100, cnTitle, BLACK);
+    CJKRenderer::drawString(display, endX, 100, chineseMonthNames[month - 1], BLACK);
 
     // Draw the calendar grid
     int numDays = daysInMonth(year, month);

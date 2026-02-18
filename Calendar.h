@@ -2,6 +2,7 @@
 #define CALENDAR_H
 
 #include <ArduinoJson.h>
+#include "SolarTerms.h"
 
 #define MAX_HOLIDAYS 40
 #define MAX_CUSTOM_DATES 20
@@ -25,6 +26,7 @@ private:
     void fetchUSHolidays(int year);
     void fetchChineseHolidays(int year);
     void loadCustomDates();
+    void loadSolarTerms(int year, int month);
     void drawGrid(int year, int month, int daysInMonth, int startDow);
     bool isHoliday(int month, int day, char *nameBuf, int bufSize);
     int daysInMonth(int year, int month);
