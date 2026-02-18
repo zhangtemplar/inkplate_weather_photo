@@ -1,18 +1,28 @@
 // Include Inkplate library to the sketch
 #include "Weather.h"
+#include "CJKRenderer.h"
 // Including fonts used
 #include "Fonts/FreeSerifBold18pt7b.h"
 #include "Fonts/FreeSerifBold12pt7b.h"
 
 /* RTC Data --Cannot be Class variable */
-RTC_DATA_ATTR char currentTime[17] = "Www Mmm dd hh:mm";
-RTC_DATA_ATTR char temperature_wind[27] = "Temp -xx.xxC Wind yyy.yyNW";
-RTC_DATA_ATTR char humidity_cloud_uvi[31] = "Humid xxx% Cloud yyy% UVI zzz%";
+RTC_DATA_ATTR char currentTime[32] = "";
+RTC_DATA_ATTR char temperature_wind[40] = "";
+RTC_DATA_ATTR char humidity_cloud_uvi[40] = "";
 /* RTC Data End ======================================== */
 
 #define NUMBER_WEATHER_ABBRS 11
 // wind direction
-const char wind_direction[8][3] = {"N", "NE", "E", "SE", "S", "SW", "W", "WN"};
+const char wind_direction[8][7] = {
+    "\xe5\x8c\x97",                    // 北
+    "\xe4\xb8\x9c\xe5\x8c\x97",        // 东北
+    "\xe4\xb8\x9c",                    // 东
+    "\xe4\xb8\x9c\xe5\x8d\x97",        // 东南
+    "\xe5\x8d\x97",                    // 南
+    "\xe8\xa5\xbf\xe5\x8d\x97",        // 西南
+    "\xe8\xa5\xbf",                    // 西
+    "\xe8\xa5\xbf\xe5\x8c\x97"         // 西北
+};
 // Contants used for drawing icons defined in https://openweathermap.org/weather-conditions
 const char abbrs[NUMBER_WEATHER_ABBRS][WEATHER_ABBR_SIZE] = {"13", "50", "11", "09", "10", "09", "03", "04", "02", "01"};
 const uint8_t *logos[NUMBER_WEATHER_ABBRS] = {icon_sn, icon_sl, icon_h, icon_t, icon_hr, icon_lr, icon_s, icon_hc, icon_hc, icon_lc, icon_c};
@@ -73,7 +83,7 @@ void Weather::drawTime()
     display.setTextSize(2);
 
     display.setCursor(8, 72);
-    display.println(currentTime);
+    CJKRenderer::drawString(display, 8, 72, currentTime, BLACK);
 }
 
 // Function for drawing city name
@@ -99,24 +109,16 @@ void Weather::drawDaily() {
 
     const int x = 8;
 
-    display.setCursor(x, 550);
-    display.println(F("Cloud"));
-    display.setCursor(x, 580);
-    display.println(F("Humidity"));
-    display.setCursor(x, 610);
-    display.println(F("UVI"));
-    display.setCursor(x, 640);
-    display.println(F("Wind"));
-    display.setCursor(x, 670);
-    display.println(F("Direction"));
-    display.setCursor(x, 700);
-    display.println(F("Morning"));
-    display.setCursor(x, 730);
-    display.println(F("Day"));
-    display.setCursor(x, 760);
-    display.println(F("Evening"));
-    display.setCursor(x, 790);
-    display.println(F("Night"));
+    // Chinese labels: 云量, 湿度, 紫外, 风速, 风向, 早晨, 白天, 傍晚, 夜晚
+    CJKRenderer::drawString(display, x, 550, "\xe4\xba\x91\xe9\x87\x8f", BLACK);           // 云量
+    CJKRenderer::drawString(display, x, 580, "\xe6\xb9\xbf\xe5\xba\xa6", BLACK);           // 湿度
+    CJKRenderer::drawString(display, x, 610, "\xe7\xb4\xab\xe5\xa4\x96", BLACK);           // 紫外
+    CJKRenderer::drawString(display, x, 640, "\xe9\xa3\x8e\xe9\x80\x9f", BLACK);           // 风速
+    CJKRenderer::drawString(display, x, 670, "\xe9\xa3\x8e\xe5\x90\x91", BLACK);           // 风向
+    CJKRenderer::drawString(display, x, 700, "\xe6\x97\xa9\xe6\x99\xa8", BLACK);           // 早晨
+    CJKRenderer::drawString(display, x, 730, "\xe7\x99\xbd\xe5\xa4\xa9", BLACK);           // 白天
+    CJKRenderer::drawString(display, x, 760, "\xe5\x82\x8d\xe6\x99\x9a", BLACK);           // 傍晚
+    CJKRenderer::drawString(display, x, 790, "\xe5\xa4\x9c\xe6\x99\x9a", BLACK);           // 夜晚
 
     for (int i = 0; i < NUMBER_DAILY; i++) {
         drawOneDay(weatherReport.daily[i], i);
@@ -129,7 +131,7 @@ void Weather::drawOneDay(WeatherData &data, int index) {
     int x = 166 + index * 132;
 
     display.setCursor(x, 440);
-    display.println(data.day);
+    CJKRenderer::drawString(display, x, 440, data.day, BLACK);
     // Weather Logo
     for (int i = 0; i < NUMBER_WEATHER_ABBRS; ++i)
     {
@@ -153,7 +155,7 @@ void Weather::drawOneDay(WeatherData &data, int index) {
     sprintf(weatherFormat, "%.2f", data.wind.speed);
     display.println(weatherFormat);
     display.setCursor(x, 670);
-    display.println(wind_direction[((data.wind.deg + 45) / 45) % 8]);
+    CJKRenderer::drawString(display, x, 670, wind_direction[((data.wind.deg + 45) / 45) % 8], BLACK);
     display.setCursor(x, 700);
     sprintf(weatherFormat, "%.2fC", data.temperature.morning);
     display.println(weatherFormat);
@@ -186,29 +188,29 @@ void Weather::drawCurrent() {
     display.setFont(&FreeSerifBold18pt7b);
     display.setTextSize(1);
     display.setTextColor(BLACK, WHITE);
-    display.setCursor(176, 128);
+    // 温度=\xe6\xb8\xa9\xe5\xba\xa6  ℃=\xe2\x84\x83  风速=\xe9\xa3\x8e\xe9\x80\x9f
     sprintf(
-        temperature_wind, 
-        "Temp %.2fC Wind %.2f%s",
+        temperature_wind,
+        "\xe6\xb8\xa9\xe5\xba\xa6 %.2f\xe2\x84\x83 \xe9\xa3\x8e\xe9\x80\x9f %.2f%s",
         weatherReport.current.temperature.day,
         weatherReport.current.wind.speed,
         wind_direction[((weatherReport.current.wind.deg + 45) / 45) % 8]
     );
-    display.print(temperature_wind);
+    CJKRenderer::drawString(display, 176, 128, temperature_wind, BLACK);
 
     // other information
     display.setFont(&FreeSerifBold18pt7b);
     display.setTextSize(1);
     display.setTextColor(BLACK, WHITE);
-    display.setCursor(176, 182);
+    // 湿度=\xe6\xb9\xbf\xe5\xba\xa6  云量=\xe4\xba\x91\xe9\x87\x8f  紫外=\xe7\xb4\xab\xe5\xa4\x96
     sprintf(
-        humidity_cloud_uvi, 
-        "Humid %d%% Cloud %d%% UVI %.2f%%",
+        humidity_cloud_uvi,
+        "\xe6\xb9\xbf\xe5\xba\xa6 %d%% \xe4\xba\x91\xe9\x87\x8f %d%% \xe7\xb4\xab\xe5\xa4\x96 %.2f",
         weatherReport.current.humidity,
         weatherReport.current.clouds,
         weatherReport.current.uvi
     );
-    display.print(humidity_cloud_uvi);
+    CJKRenderer::drawString(display, 176, 182, humidity_cloud_uvi, BLACK);
 }
 
 void Weather::draw()

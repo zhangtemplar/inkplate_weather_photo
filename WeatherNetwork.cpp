@@ -36,7 +36,13 @@ extern void startCaptivePortal();
 
 // Declared week days
 const char weekDays[8][8] = {
-    "Mon", "Tue", "Wed", "Thr", "Fri", "Sat", "Sun",
+    "\xe5\x91\xa8\xe4\xb8\x80",  // 周一
+    "\xe5\x91\xa8\xe4\xba\x8c",  // 周二
+    "\xe5\x91\xa8\xe4\xb8\x89",  // 周三
+    "\xe5\x91\xa8\xe5\x9b\x9b",  // 周四
+    "\xe5\x91\xa8\xe4\xba\x94",  // 周五
+    "\xe5\x91\xa8\xe5\x85\xad",  // 周六
+    "\xe5\x91\xa8\xe6\x97\xa5",  // 周日
 };
 
 void WeatherNetwork::begin()
@@ -60,8 +66,15 @@ void WeatherNetwork::getTime(char *timeStr, int timezone_offset)
     struct tm timeinfo;
     gmtime_r(&nowSecs, &timeinfo);
 
-    // Copies time string into timeStr: Www Mmm dd hh:mm
-    strncpy(timeStr, asctime(&timeinfo), 16);
+    // Format: "YYYY年M月D日 周X HH:MM"
+    // 年=\xe5\xb9\xb4 月=\xe6\x9c\x88 日=\xe6\x97\xa5
+    sprintf(timeStr, "%d\xe5\xb9\xb4%d\xe6\x9c\x88%d\xe6\x97\xa5 %s %02d:%02d",
+        timeinfo.tm_year + 1900,
+        timeinfo.tm_mon + 1,
+        timeinfo.tm_mday,
+        weekDays[timeinfo.tm_wday == 0 ? 6 : timeinfo.tm_wday - 1],
+        timeinfo.tm_hour,
+        timeinfo.tm_min);
     Serial.println(timeStr);
 }
 
@@ -98,7 +111,7 @@ void WeatherNetwork::parseWeather(JsonObject data, WeatherData &weather, bool ha
     // time
     int hours = (data[F("dt")].as<int>() + timezone_offset) / 3600;
     weather.hour = hours % 24;
-    strncpy(weather.day, weekDays[(hours / 24 + 3) % 7], 3);
+    strncpy(weather.day, weekDays[(hours / 24 + 3) % 7], 7);
 
     // main
     // Serial.print(F("parseWeather/main: "));

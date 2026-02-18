@@ -47,7 +47,7 @@ struct Wind
 
 struct WeatherData
 {
-  char day[4];
+  char day[8];
   char icon[WEATHER_ABBR_SIZE];
   char rain; // 0-100, rain probability
   char clouds; // 0-100

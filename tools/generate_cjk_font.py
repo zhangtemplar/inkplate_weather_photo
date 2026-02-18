@@ -42,6 +42,8 @@ DEFAULT_CHARS = (
     "节"
     # Additional for display
     "温度湿速"
+    # Weather page labels
+    "量紫外向早晨傍晚夜北东南西周"
 )
 
 
