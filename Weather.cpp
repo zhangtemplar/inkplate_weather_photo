@@ -36,7 +36,7 @@ void Weather::drawHourly()
     // x=8, y=228, w=18*48, h=200
     int left = 8;
     const int top = 244;
-    const int bottom = 444;
+    const int bottom = 400;
     const int space = 12;
     // find min and max temerature
     float minTemperature = 200, maxTemperature = -100;
@@ -55,7 +55,7 @@ void Weather::drawHourly()
     sprintf(weatherFormat, "%.2fC", minTemperature);
     display.println(weatherFormat);
 
-    const float step = 200.0f / (maxTemperature - minTemperature);
+    const float step = (float)(bottom - top) / (maxTemperature - minTemperature);
     Serial.print(F("max temperature "));
     Serial.print(maxTemperature, DEC);
     Serial.print(F(" min temperature "));
@@ -65,7 +65,7 @@ void Weather::drawHourly()
     display.setTextColor(BLACK, WHITE);
     // shift right for axis
     left += 100;
-    display.drawRect(left, top - space, 576, 205, BLACK);
+    display.drawRect(left, top - space, 576, bottom - top + 2 * space, BLACK);
     for (int i = 0; i < NUMBER_HOURLY; i++) {
         display.setCursor(left + space * i, top + (int) ((maxTemperature - weatherReport.hourly[i].temperature.day) * step));
         display.println(F("+"));
@@ -109,7 +109,8 @@ void Weather::drawDaily() {
 
     const int x = 8;
 
-    // Chinese labels: 云量, 湿度, 紫外, 风速, 风向, 早晨, 白天, 傍晚, 夜晚
+    // Chinese labels: 降雨, 云量, 湿度, 紫外, 风速, 风向, 早晨, 白天, 傍晚, 夜晚
+    CJKRenderer::drawString(display, x, 520, "\xe9\x99\x8d\xe9\x9b\xa8", BLACK);           // 降雨
     CJKRenderer::drawString(display, x, 550, "\xe4\xba\x91\xe9\x87\x8f", BLACK);           // 云量
     CJKRenderer::drawString(display, x, 580, "\xe6\xb9\xbf\xe5\xba\xa6", BLACK);           // 湿度
     CJKRenderer::drawString(display, x, 610, "\xe7\xb4\xab\xe5\xa4\x96", BLACK);           // 紫外

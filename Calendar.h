@@ -24,7 +24,7 @@ private:
 
     void syncTime();
     void fetchUSHolidays(int year);
-    void fetchChineseHolidays(int year);
+    void fetchChineseHolidays(int year, int month);
     void loadCustomDates();
     void loadSolarTerms(int year, int month);
     void drawGrid(int year, int month, int daysInMonth, int startDow);

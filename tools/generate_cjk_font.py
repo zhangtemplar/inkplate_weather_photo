@@ -38,6 +38,8 @@ DEFAULT_CHARS = (
     "节气"
     # Holiday names
     "元宵端午中秋国庆重阳除夕腊八旦"
+    # Holiday translations (for API fallback)
+    "劳动"
     # Festival
     "节"
     # Additional for display

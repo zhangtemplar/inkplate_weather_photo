@@ -40,6 +40,43 @@ static const char *chineseMonthNames[] = {
     "\xe5\x8d\x81\xe4\xba\x8c\xe6\x9c\x88"  // 十二月
 };
 
+// Fallback translation table for Chinese holidays returned in English
+struct HolidayTranslation {
+    const char *english;
+    const char *chinese;
+};
+
+static const HolidayTranslation chineseHolidayMap[] = {
+    {"Chinese New Year", "\xe6\x98\xa5\xe8\x8a\x82"},                             // 春节
+    {"Spring Festival", "\xe6\x98\xa5\xe8\x8a\x82"},                              // 春节
+    {"New Year's Day", "\xe5\x85\x83\xe6\x97\xa6"},                               // 元旦
+    {"Qingming Festival", "\xe6\xb8\x85\xe6\x98\x8e\xe8\x8a\x82"},               // 清明节
+    {"Tomb Sweeping Day", "\xe6\xb8\x85\xe6\x98\x8e\xe8\x8a\x82"},               // 清明节
+    {"Labour Day", "\xe5\x8a\xb3\xe5\x8a\xa8\xe8\x8a\x82"},                      // 劳动节
+    {"Labor Day", "\xe5\x8a\xb3\xe5\x8a\xa8\xe8\x8a\x82"},                       // 劳动节
+    {"Dragon Boat Festival", "\xe7\xab\xaf\xe5\x8d\x88\xe8\x8a\x82"},            // 端午节
+    {"Mid-Autumn Festival", "\xe4\xb8\xad\xe7\xa7\x8b\xe8\x8a\x82"},             // 中秋节
+    {"National Day", "\xe5\x9b\xbd\xe5\xba\x86\xe8\x8a\x82"},                    // 国庆节
+    {"Lantern Festival", "\xe5\x85\x83\xe5\xae\xb5\xe8\x8a\x82"},                // 元宵节
+    {"Double Ninth Festival", "\xe9\x87\x8d\xe9\x98\xb3\xe8\x8a\x82"},           // 重阳节
+    {"Chinese New Year's Eve", "\xe9\x99\xa4\xe5\xa4\x95"},                       // 除夕
+    {"Laba Festival", "\xe8\x85\x8a\xe5\x85\xab\xe8\x8a\x82"},                   // 腊八节
+};
+
+static const int NUM_HOLIDAY_TRANSLATIONS = sizeof(chineseHolidayMap) / sizeof(chineseHolidayMap[0]);
+
+// Translate English holiday name to Chinese if a mapping exists
+static const char* translateHolidayName(const char *name) {
+    // Already in Chinese (first byte >= 0x80)
+    if ((unsigned char)name[0] >= 0x80) return name;
+    for (int i = 0; i < NUM_HOLIDAY_TRANSLATIONS; i++) {
+        if (strcmp(name, chineseHolidayMap[i].english) == 0) {
+            return chineseHolidayMap[i].chinese;
+        }
+    }
+    return name;
+}
+
 void Calendar::syncTime() {
     configTime(0, 0, "pool.ntp.org", "time.nist.gov");
     Serial.print(F("Waiting for NTP time sync: "));
@@ -91,7 +128,7 @@ void Calendar::fetchUSHolidays(int year) {
     http.end();
 }
 
-void Calendar::fetchChineseHolidays(int year) {
+void Calendar::fetchChineseHolidays(int year, int month) {
     if (strlen(CALENDARIFIC_KEY) == 0) {
         Serial.println(F("No Calendarific API key, skipping Chinese holidays"));
         return;
@@ -100,7 +137,7 @@ void Calendar::fetchChineseHolidays(int year) {
     WiFiClientSecure client;
     client.setInsecure();
     char url[256];
-    sprintf(url, "https://calendarific.com/api/v2/holidays?api_key=%s&country=CN&year=%d&language=zh", CALENDARIFIC_KEY, year);
+    sprintf(url, "https://calendarific.com/api/v2/holidays?api_key=%s&country=CN&year=%d&month=%d&type=national&language=zh", CALENDARIFIC_KEY, year, month);
     http.begin(client, url);
     int httpCode = http.GET();
     if (httpCode == 200) {
@@ -114,7 +151,9 @@ void Calendar::fetchChineseHolidays(int year) {
                 JsonObject dateObj = obj["date"]["datetime"];
                 holidays[holidayCount].month = dateObj["month"];
                 holidays[holidayCount].day = dateObj["day"];
-                strlcpy(holidays[holidayCount].name, obj["name"], sizeof(holidays[0].name));
+                const char *rawName = obj["name"];
+                const char *translated = translateHolidayName(rawName);
+                strlcpy(holidays[holidayCount].name, translated, sizeof(holidays[0].name));
                 holidayCount++;
             }
         } else {
@@ -220,16 +259,24 @@ void Calendar::drawGrid(int year, int month, int numDays, int startDow) {
     const int cellH = 90;
     const int headerH = 30;
 
-    const char *dayHeaders[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+    // Chinese weekday headers: 周日, 周一, 周二, 周三, 周四, 周五, 周六
+    const char *dayHeaders[] = {
+        "\xe5\x91\xa8\xe6\x97\xa5",   // 周日
+        "\xe5\x91\xa8\xe4\xb8\x80",   // 周一
+        "\xe5\x91\xa8\xe4\xba\x8c",   // 周二
+        "\xe5\x91\xa8\xe4\xb8\x89",   // 周三
+        "\xe5\x91\xa8\xe5\x9b\x9b",   // 周四
+        "\xe5\x91\xa8\xe4\xba\x94",   // 周五
+        "\xe5\x91\xa8\xe5\x85\xad"    // 周六
+    };
 
     // Draw day headers
     display.setFont(&FreeSerifBold12pt7b);
     display.setTextSize(1);
     display.setTextColor(BLACK, WHITE);
     for (int i = 0; i < 7; i++) {
-        int x = gridLeft + i * cellW + cellW / 2 - 18;
-        display.setCursor(x, gridTop);
-        display.print(dayHeaders[i]);
+        int x = gridLeft + i * cellW + cellW / 2 - 24;
+        CJKRenderer::drawString(display, x, gridTop, dayHeaders[i], BLACK);
     }
 
     // Draw grid lines
@@ -267,19 +314,28 @@ void Calendar::drawGrid(int year, int month, int numDays, int startDow) {
         display.print(day);
 
         // Solar term annotation inside cell
+        bool shownInCell = false;
         int termIdx = findSolarTerm(year, month, day);
         if (termIdx >= 0) {
             const char *termName = getSolarTermName(termIdx);
             display.setFont(&FreeSans9pt7b);
             CJKRenderer::drawString(display, cx + 8, cy + 70, termName, BLACK);
             display.setFont(&FreeSerifBold18pt7b);
+            shownInCell = true;
         }
 
         // Holiday marker
         if (isHoliday(month, day, nameBuf, sizeof(nameBuf))) {
             display.fillCircle(cx + cellW - 16, cy + 16, 6, BLACK);
-            // Add to event list below the grid
-            if (eventsShown < 8) {
+            // Draw holiday name inside cell (only Chinese names, skip English to avoid overflow)
+            if (termIdx < 0 && (unsigned char)nameBuf[0] >= 0x80) {
+                display.setFont(&FreeSans9pt7b);
+                CJKRenderer::drawString(display, cx + 8, cy + 70, nameBuf, BLACK);
+                display.setFont(&FreeSerifBold18pt7b);
+                shownInCell = true;
+            }
+            // Add to event list below the grid (only if not already shown in cell)
+            if (!shownInCell && eventsShown < 8) {
                 display.setFont(&FreeSerifBold12pt7b);
                 int evX = gridLeft + (eventsShown % 2) * 560;
                 int evY = eventListY + (eventsShown / 2) * 28;
@@ -332,7 +388,7 @@ void Calendar::draw() {
 
     // Fetch holidays and solar terms
     fetchUSHolidays(year);
-    fetchChineseHolidays(year);
+    fetchChineseHolidays(year, month);
     loadCustomDates();
     loadSolarTerms(year, month);
 
@@ -342,24 +398,30 @@ void Calendar::draw() {
     display.setTextColor(BLACK, WHITE);
     char title[32];
     sprintf(title, "%s %d", monthNames[month - 1], year);
-    // Center the title approximately
+    // Chinese date annotation (e.g. "2026年二月")
+    char cnTitle[32];
+    sprintf(cnTitle, " %d\xe5\xb9\xb4", year);  // " 2026年"
+    // Measure widths to center together
     int titleLen = strlen(title);
-    int titleX = (1200 - titleLen * 28) / 2;
-    if (titleX < 0) titleX = 40;
-    display.setCursor(titleX, 60);
-    display.print(title);
-
-    // Chinese date subtitle (e.g. "2026年二月")
+    int engWidth = titleLen * 28;
     display.setFont(&FreeSerifBold12pt7b);
     display.setTextSize(1);
-    char cnTitle[32];
-    sprintf(cnTitle, "%d\xe5\xb9\xb4", year);  // "2026年"
     int cnWidth = CJKRenderer::measureString(display, cnTitle);
     cnWidth += CJKRenderer::measureString(display, chineseMonthNames[month - 1]);
-    int cnTitleX = (1200 - cnWidth) / 2;
-    if (cnTitleX < 0) cnTitleX = 40;
-    int endX = CJKRenderer::drawString(display, cnTitleX, 100, cnTitle, BLACK);
-    CJKRenderer::drawString(display, endX, 100, chineseMonthNames[month - 1], BLACK);
+    int totalWidth = engWidth + cnWidth;
+    int startX = (1200 - totalWidth) / 2;
+    if (startX < 0) startX = 40;
+    // Draw English title
+    display.setFont(&FreeSerifBold18pt7b);
+    display.setTextSize(2);
+    display.setCursor(startX, 60);
+    display.print(title);
+    int afterEngX = display.getCursorX();
+    // Draw Chinese annotation (smaller, same row)
+    display.setFont(&FreeSerifBold12pt7b);
+    display.setTextSize(1);
+    int endX = CJKRenderer::drawString(display, afterEngX, 60, cnTitle, BLACK);
+    CJKRenderer::drawString(display, endX, 60, chineseMonthNames[month - 1], BLACK);
 
     // Draw the calendar grid
     int numDays = daysInMonth(year, month);
